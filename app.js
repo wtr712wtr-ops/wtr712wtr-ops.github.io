@@ -249,17 +249,33 @@
       apprBadge.style.display = data.approvals.length ? "" : "none";
     });
 
-    // 媒体カード（媒体ごとの直近の作業と進捗）
+    // 媒体カード（媒体ごとの直近の作業と進捗）。カードを押すと各媒体へ飛ぶ
+    var MEDIA_LINKS = {
+      instagram: "https://www.instagram.com/thegym_fit/",
+      threads: "https://www.threads.com/@thegym_fit",
+      facebook: "https://www.facebook.com/61587059349872",
+      x: "https://x.com/thegym_fit",
+      blog: "https://the-gym.info/blog/",
+      gbp: "https://www.google.com/maps/search/?api=1&query=THE%20GYM%20%E5%90%8D%E5%8F%A4%E5%B1%8B%E5%B8%82%E7%B7%91%E5%8C%BA%E6%BB%9D%E3%83%8E%E6%B0%B4",
+      note: "https://note.com/wataru_gym_ai",
+      youtube: "https://www.youtube.com/@ParallelJapanWorld",
+      line_stamps: "https://creator.line.me/",
+      booth: "https://manage.booth.pm/"
+    };
     document.getElementById("media").innerHTML = data.media_channels.map(function (m) {
       var works = data.work_items.filter(function (w) { return w.media_id === m.id; });
       var head = works[0];
       var body = head
         ? '<p class="line">' + esc(head.title) + "</p>" + progressHtml(head)
         : '<p class="line empty">進行中の作業なし</p>';
-      return '<article class="card"><div class="name">' + esc(m.name) + "</div>" +
+      var url = MEDIA_LINKS[m.slug];
+      var inner = '<div class="name">' + esc(m.name) + (url ? ' <span class="go">開く ›</span>' : "") + "</div>" +
         '<div class="sub">' + esc(m.account_label) + "</div>" +
         (m.schedule_label ? '<div class="sub">更新：' + esc(m.schedule_label) + "</div>" : "") +
-        (m.fallback_label ? '<div class="sub">代替：' + esc(m.fallback_label) + "</div>" : "") + body + "</article>";
+        (m.fallback_label ? '<div class="sub">代替：' + esc(m.fallback_label) + "</div>" : "") + body;
+      return url
+        ? '<a class="card medialink" href="' + url + '" target="_blank" rel="noopener">' + inner + "</a>"
+        : '<article class="card">' + inner + "</article>";
     }).join("") || '<p class="empty">媒体の登録なし</p>';
 
     // 案件

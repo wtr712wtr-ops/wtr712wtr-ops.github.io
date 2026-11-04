@@ -254,6 +254,10 @@ main { padding-bottom: 118px; }
 .panel.active { display: block; }
 .panel > section:first-child { margin-top: 10px; }
 
+/* 媒体カードのリンク */
+a.card.medialink { display: block; text-decoration: none; color: inherit; }
+.go { color: var(--blue); font-size: 12px; font-weight: 700; }
+
 /* 今日のタスク */
 .task .trow { display: flex; align-items: center; gap: 10px; }
 .ttime { font-size: 13px; font-weight: 700; color: var(--blue); min-width: 42px; }
