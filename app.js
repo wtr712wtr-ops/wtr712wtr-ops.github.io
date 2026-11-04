@@ -574,25 +574,14 @@
         '<span class="clampable">' + esc(r.body) + "</span></article>";
     }).join("") || '<p class="empty">報告なし</p>';
 
-    // Museタブの最近の報告（連携タブと同じ報告の最新3件）
-    var rm = document.getElementById("reports-muse");
-    if (rm) {
-      rm.innerHTML = data.reports.slice(0, 3).map(function (r) {
-        return '<article class="card report"><time>' + esc(fmtTime(r.created_at)) + "</time>" +
-          '<span class="clampable">' + esc(r.body) + "</span></article>";
-      }).join("") || '<p class="empty">報告なし</p>';
-    }
   }
 
-  // タブ切り替え（今日／案件／作業／数字／連携／報告）
+  // タブ切り替え（今日／媒体／案件／数字／連携）。Museタブは画面を持たず、押すと直接チャットを開く
   function activateTab(name) {
-    var found = false;
+    if (!document.getElementById("panel-" + name)) name = "today";
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
-      var on = b.getAttribute("data-tab") === name;
-      if (on) found = true;
-      b.classList.toggle("active", on);
+      b.classList.toggle("active", b.getAttribute("data-tab") === name);
     });
-    if (!found) name = "today";
     Array.prototype.forEach.call(document.querySelectorAll(".panel"), function (p) {
       p.classList.toggle("active", p.id === "panel-" + name);
     });
@@ -600,6 +589,10 @@
   Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
     b.addEventListener("click", function () {
       var name = b.getAttribute("data-tab");
+      if (name === "muse") {
+        window.open("https://muse.ai/", "_blank");
+        return;
+      }
       try { history.replaceState(null, "", "#" + name); } catch (e) {}
       activateTab(name);
       window.scrollTo(0, 0);
