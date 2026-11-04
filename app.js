@@ -74,6 +74,10 @@
       { id: "r1", kind: "result", body: "Threads 11月3日分を承認文面のまま公開し、読み戻しで一致を確認", created_at: "2026-11-03T20:55:00+09:00" },
       { id: "r2", kind: "progress", body: "法人LINEの本番テストは鍵の種類が原因で作成できず。11月4日18時に再実施", created_at: "2026-11-03T19:10:00+09:00" },
       { id: "r3", kind: "alert", body: "Instagram の予約投稿が公開されなかったため、即時投稿へ切り替えた", created_at: "2026-11-03T21:15:00+09:00" }
+    ],
+    today_tasks: [
+      { id: 1, task_date: "2026-11-04", title: "法人LINE 本番Square再実施（buyer-levelトークンで作成）", task_time: "18:00", project: null, note: "", done: false, done_at: null, sort_order: 1 },
+      { id: 2, task_date: "2026-11-04", title: "Threads第1週 #7投稿", task_time: "20:30", project: "ミューズの作業", note: "", done: true, done_at: "2026-11-04T20:30:00+09:00", sort_order: 2 }
     ]
   };
 
@@ -128,6 +132,10 @@
     alert("保存できませんでした。編集キーが違うか、通信に失敗しました。（" + e.message + "）");
   }
 
+  function todayJst() {
+    return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+  }
+
   function load() {
     if (useMock) return Promise.resolve(MOCK);
     var workSelect =
@@ -136,6 +144,9 @@
     var doneSelect =
       "select=*,media:media_channels(name,slug),project:projects(name,slug)" +
       "&status=eq.done&order=done_at.desc.nullslast&limit=10";
+    // 今日のタスクの取得失敗（テーブル未作成など）で画面全体を落とさない
+    var todayFetch = rest("daily_tasks?select=*&task_date=eq." + todayJst() +
+      "&order=done.asc,sort_order.asc,id.asc&limit=100").catch(function () { return []; });
     return Promise.all([
       rest("projects?select=*&order=sort_order.asc"),
       rest("media_channels?select=*&order=sort_order.asc"),
@@ -145,9 +156,10 @@
       rest("work_items?" + doneSelect),
       rest("board_requests?select=*,project:projects(name,slug)&order=created_at.desc&limit=20"),
       rest("measures?select=*,project:projects(name,slug),media:media_channels(name,slug)&order=created_at.desc&limit=20"),
-      rest("measure_results?select=*&order=measured_at.desc&limit=300")
+      rest("measure_results?select=*&order=measured_at.desc&limit=300"),
+      todayFetch
     ]).then(function (r) {
-      return { projects: r[0], media_channels: r[1], work_items: r[2], approvals: r[3], reports: r[4], done_items: r[5], board_requests: r[6], measures: r[7], measure_results: r[8] };
+      return { projects: r[0], media_channels: r[1], work_items: r[2], approvals: r[3], reports: r[4], done_items: r[5], board_requests: r[6], measures: r[7], measure_results: r[8], today_tasks: r[9] };
     });
   }
 
@@ -183,6 +195,32 @@
     document.getElementById("meta").innerHTML =
       (useMock ? '<span class="badge">モック表示</span> ' : "") +
       esc(new Date().toLocaleString("ja-JP")) + " 時点";
+
+    // 今日のタスク（司令塔の先頭）
+    var tdEl = document.getElementById("today-date");
+    if (tdEl) {
+      var tparts = todayJst().split("-");
+      tdEl.textContent = Number(tparts[1]) + "/" + Number(tparts[2]);
+    }
+    var tasks = data.today_tasks || [];
+    var doneCount = tasks.filter(function (t) { return t.done; }).length;
+    document.getElementById("today").innerHTML = tasks.length ? tasks.map(function (t) {
+      var tbtn = "";
+      if (!useMock && getToken()) {
+        tbtn = t.done
+          ? '<button class="btn undo-btn" data-tundo="' + esc(t.id) + '">完了を取り消す</button>'
+          : '<button class="btn done-btn" data-tdone="' + esc(t.id) + '">完了にする</button>';
+      }
+      var head = (t.task_time ? '<span class="ttime">' + esc(t.task_time) + "</span>" : "") +
+        '<span class="tcheck' + (t.done ? " on" : "") + '">' + (t.done ? "✓" : "") + "</span>" +
+        '<span class="ttitle">' + esc(t.title) + "</span>";
+      return '<article class="card task' + (t.done ? " is-done" : "") + '"><div class="trow">' + head + "</div>" +
+        (t.project ? '<div class="sub">' + esc(t.project) + "</div>" : "") +
+        (t.note ? '<p class="line">' + esc(t.note) + "</p>" : "") +
+        tbtn +
+        "</article>";
+    }).join("") + '<p class="sub today-count">' + tasks.length + "件中 " + doneCount + "件が完了</p>"
+      : '<p class="empty">今日のタスクはまだ登録なし</p>';
 
     // 承認待ち
     var apSec = document.getElementById("approvals-section");
@@ -323,6 +361,21 @@
         b.addEventListener("click", function () {
           writeRest("PATCH", "work_items?id=eq." + encodeURIComponent(b.getAttribute("data-undo")), {
             status: "planned", done_at: null
+          }).then(reload).catch(writeFailed);
+        });
+      });
+      Array.prototype.forEach.call(document.querySelectorAll("[data-tdone]"), function (b) {
+        b.addEventListener("click", function () {
+          if (!window.confirm("このタスクを完了にしますか？")) return;
+          writeRest("PATCH", "daily_tasks?id=eq." + encodeURIComponent(b.getAttribute("data-tdone")), {
+            done: true, done_at: new Date().toISOString()
+          }).then(reload).catch(writeFailed);
+        });
+      });
+      Array.prototype.forEach.call(document.querySelectorAll("[data-tundo]"), function (b) {
+        b.addEventListener("click", function () {
+          writeRest("PATCH", "daily_tasks?id=eq." + encodeURIComponent(b.getAttribute("data-tundo")), {
+            done: false, done_at: null
           }).then(reload).catch(writeFailed);
         });
       });
