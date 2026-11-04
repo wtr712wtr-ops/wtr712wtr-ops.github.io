@@ -545,3 +545,10 @@
     document.getElementById("meta").textContent = "読み取りに失敗しました：" + e.message;
   });
 })();
+
+// アプリとしてインストール可能にする（service worker登録）
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  });
+}
