@@ -586,7 +586,7 @@
 
   }
 
-  // タブ切り替え（今日／媒体／案件／数字／連携）。Museタブは画面を持たず、押すと直接チャットを開く
+  // タブ切り替え（今日／媒体／案件／数字／連携）
   function activateTab(name) {
     if (!document.getElementById("panel-" + name)) name = "today";
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
@@ -599,10 +599,6 @@
   Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
     b.addEventListener("click", function () {
       var name = b.getAttribute("data-tab");
-      if (name === "muse") {
-        window.open("https://muse.ai/", "_blank");
-        return;
-      }
       try { history.replaceState(null, "", "#" + name); } catch (e) {}
       activateTab(name);
       window.scrollTo(0, 0);
