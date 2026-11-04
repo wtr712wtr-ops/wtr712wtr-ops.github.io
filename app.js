@@ -136,6 +136,12 @@
     return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
   }
 
+  function tomorrowJst() {
+    var p = todayJst().split("-");
+    var d = new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]) + 1));
+    return d.toISOString().slice(0, 10);
+  }
+
   function load() {
     if (useMock) return Promise.resolve(MOCK);
     var workSelect =
@@ -209,7 +215,8 @@
       if (!useMock && getToken()) {
         tbtn = t.done
           ? '<button class="btn undo-btn" data-tundo="' + esc(t.id) + '">完了を取り消す</button>'
-          : '<button class="btn done-btn" data-tdone="' + esc(t.id) + '">完了にする</button>';
+          : '<button class="btn done-btn" data-tdone="' + esc(t.id) + '">完了にする</button>' +
+            '<button class="btn move-btn" data-tmove="' + esc(t.id) + '">明日へ送る</button>';
       }
       var head = (t.task_time ? '<span class="ttime">' + esc(t.task_time) + "</span>" : "") +
         '<span class="tcheck' + (t.done ? " on" : "") + '">' + (t.done ? "✓" : "") + "</span>" +
@@ -382,6 +389,18 @@
           writeRest("PATCH", "daily_tasks?id=eq." + encodeURIComponent(b.getAttribute("data-tundo")), {
             done: false, done_at: null
           }).then(reload).catch(writeFailed);
+        });
+      });
+      Array.prototype.forEach.call(document.querySelectorAll("[data-tmove]"), function (b) {
+        b.addEventListener("click", function () {
+          if (!window.confirm("このタスクを明日に送りますか？")) return;
+          var id = encodeURIComponent(b.getAttribute("data-tmove"));
+          writeRest("PATCH", "daily_tasks?id=eq." + id, {
+            task_date: tomorrowJst()
+          }).then(reload).catch(function () {
+            // 明日分に同じタスクが既にある場合は、今日分を消して一本化する
+            writeRest("DELETE", "daily_tasks?id=eq." + id, null).then(reload).catch(writeFailed);
+          });
         });
       });
     }

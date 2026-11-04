@@ -144,6 +144,7 @@ h2 {
 .btn:hover { background: #f2f6ff; }
 .btn:active { opacity: 0.6; }
 .btn.done-btn { margin-top: 12px; background: var(--blue); border-color: var(--blue); color: #fff; }
+.btn.move-btn { margin-top: 12px; margin-left: 6px; }
 .btn.done-btn:hover { background: #0a4fd6; }
 .addform {
   display: flex;
