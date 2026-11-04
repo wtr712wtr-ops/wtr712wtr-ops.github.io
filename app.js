@@ -541,9 +541,9 @@
 
     // 担当AI（作業と依頼から自動集計）。urlは各AIを直接開くリンク（アプリがあればアプリで開く）
     var AGENTS = [
-      { key: "muse", label: "Muse", role: "開発・制作・運用", url: "https://muse.ai/" },
-      { key: "gpt", label: "GPT", role: "デザイン・画像・相談", url: "https://chatgpt.com/" },
-      { key: "perplexity", label: "Perplexity", role: "調査", url: "https://www.perplexity.ai/" }
+      { key: "muse", label: "Muse", role: "開発・制作・運用", url: "intent://muse.ai/#Intent;scheme=https;package=com.facebook.aura;S.browser_fallback_url=https%3A%2F%2Fmuse.ai%2F;end" },
+      { key: "gpt", label: "GPT", role: "デザイン・画像・相談", url: "intent://chatgpt.com/#Intent;scheme=https;package=com.openai.chatgpt;S.browser_fallback_url=https%3A%2F%2Fchatgpt.com%2F;end" },
+      { key: "perplexity", label: "Perplexity", role: "調査", url: "intent://www.perplexity.ai/#Intent;scheme=https;package=ai.perplexity.app.android;S.browser_fallback_url=https%3A%2F%2Fwww.perplexity.ai%2F;end" }
     ];
     document.getElementById("agents").innerHTML = AGENTS.map(function (ag) {
       var items = [];
@@ -564,7 +564,7 @@
           ask = '<button class="btn" type="button" data-ask="' + ag.key + '">このAIへ指示</button>';
         }
       } catch (e) {}
-      var btns = '<div class="agent-btns"><a class="btn" href="' + ag.url + '" target="_blank" rel="noopener">開く</a>' + ask + "</div>";
+      var btns = '<div class="agent-btns"><a class="btn" href="' + ag.url + '">開く</a>' + ask + "</div>";
       return '<article class="card"><div class="name">' + esc(ag.label) + "</div>" +
         '<div class="sub">' + esc(ag.role) + "｜対応中 " + items.length + "件</div>" + body + btns + "</article>";
     }).join("");
