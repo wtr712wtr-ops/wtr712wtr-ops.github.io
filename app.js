@@ -375,25 +375,62 @@
       // 一括指示フォーム（AI連携あて）
       var dv = document.getElementById("directive");
       if (getToken()) {
+        var TEMPLATES = {
+          image: "目的：\n使う媒体：\nサイズ：\n雰囲気・条件：\n納品先：共有フォルダ（Drive）",
+          research: "調べてほしいこと：\n知りたい理由：\n出力してほしい形：",
+          consult: "相談内容：\n迷っている点：\n決めたいこと：",
+          writing: "作る・直す文章：\n使い道：\nトーン："
+        };
         dv.innerHTML = '<form class="addform" id="directive-form">' +
-          '<input type="text" id="dv-title" placeholder="指示・相談の件名" autocomplete="off">' +
           '<select id="dv-ai"><option value="muse">Muse へ</option><option value="gpt">GPTへ</option><option value="perplexity">Perplexityへ</option></select>' +
           '<select id="dv-project"><option value="">案件なし</option>' +
           data.projects.map(function (p) {
             return '<option value="' + esc(p.id) + '">' + esc(p.name) + "</option>";
           }).join("") +
-          '</select><button class="btn" type="submit">送る</button></form>' +
-          '<p class="sub">送った指示は Muse が定期確認で拾い、対応結果を報告履歴とチャットで返します。</p>';
+          '</select>' +
+          '<select id="dv-priority"><option value="normal">通常</option><option value="urgent">急ぎ</option></select>' +
+          '<input type="text" id="dv-title" placeholder="指示・相談の件名" autocomplete="off">' +
+          '<div class="dvchips">' +
+          '<button type="button" class="chipbtn" data-tpl="image">画像を作る</button>' +
+          '<button type="button" class="chipbtn" data-tpl="research">調べる</button>' +
+          '<button type="button" class="chipbtn" data-tpl="consult">相談する</button>' +
+          '<button type="button" class="chipbtn" data-tpl="writing">文章を作る・直す</button>' +
+          '</div>' +
+          '<textarea id="dv-detail" placeholder="指示の本文（条件・納品先など）"></textarea>' +
+          '<input type="date" id="dv-due" title="期限（任意）">' +
+          '<button class="btn appr-ok" type="submit">送る</button></form>' +
+          '<p class="sub">送ると Muse が約1分で検知して受け付けます。GPT宛は依頼ボードへ中継し、GPTの定期確認で処理されます。</p>';
+        Array.prototype.forEach.call(dv.querySelectorAll("[data-tpl]"), function (b) {
+          b.addEventListener("click", function () {
+            var ta = document.getElementById("dv-detail");
+            if (!ta.value.trim()) ta.value = TEMPLATES[b.getAttribute("data-tpl")] || "";
+            ta.focus();
+          });
+        });
         document.getElementById("directive-form").addEventListener("submit", function (ev) {
           ev.preventDefault();
           var title = document.getElementById("dv-title").value.trim();
           if (!title) return;
+          var parts = [];
+          var body = document.getElementById("dv-detail").value.trim();
+          if (body) parts.push(body);
+          var due = document.getElementById("dv-due").value;
+          if (due) parts.push("期限：" + due);
+          if (document.getElementById("dv-priority").value === "urgent") parts.push("優先度：急ぎ");
           writeRest("POST", "board_requests", {
-            title: title, detail: "", requester: "wataru",
+            title: title, detail: parts.join("\n"), requester: "wataru",
             assignee_ai: document.getElementById("dv-ai").value,
             project_id: document.getElementById("dv-project").value || null,
             status: "requested", deliverable_url: ""
           }).then(reload).catch(writeFailed);
+        });
+        Array.prototype.forEach.call(document.querySelectorAll("[data-ask]"), function (b) {
+          b.addEventListener("click", function () {
+            var sel = document.getElementById("dv-ai");
+            if (sel) sel.value = b.getAttribute("data-ask");
+            var t = document.getElementById("dv-title");
+            if (t) { t.scrollIntoView({ block: "center" }); t.focus(); }
+          });
         });
       } else {
         dv.innerHTML = "";
@@ -475,15 +512,29 @@
     }).join("") || '<p class="empty">施策の登録なし</p>';
 
     // AI連携（依頼ボード）
-    var BOARD_STATUS = { requested: "依頼中", in_progress: "制作中", done: "完了", cancelled: "中止" };
+    var BOARD_STATUS = { requested: "送信済み", in_progress: "対応中", delivered: "納品あり", checked: "検品済み", done: "完了", cancelled: "中止" };
     var AI_LABEL = { gpt: "GPT", muse: "Muse", perplexity: "Perplexity" };
+    function boardNext(b) {
+      if (b.status === "done" || b.status === "cancelled") return "";
+      if (b.assignee_ai === "gpt") {
+        return (b.detail && b.detail.indexOf("中継済み") >= 0)
+          ? "GPTの定期確認待ちです" : "Museが依頼ボードへ中継します";
+      }
+      if (b.assignee_ai === "perplexity") return "Museが調査として処理します";
+      return "Museが受け付け次第、対応します";
+    }
     document.getElementById("board").innerHTML = (data.board_requests || []).map(function (b) {
       var proj = (b.project && b.project.name) ? b.project.name + "｜" : "";
+      var urgent = (b.detail && b.detail.indexOf("優先度：急ぎ") >= 0)
+        ? ' <span class="status urgent">急ぎ</span>' : "";
+      var next = boardNext(b);
       return '<article class="card"><div class="name">' + esc(b.title) + "</div>" +
-        '<div class="sub">' + esc(proj) + "担当：" + esc(AI_LABEL[b.assignee_ai] || b.assignee_ai || "") + "</div>" +
+        '<div class="sub">' + esc(proj) + "担当：" + esc(AI_LABEL[b.assignee_ai] || b.assignee_ai || "") +
+        (b.created_at ? "｜" + esc(fmtTime(b.created_at)) : "") + "</div>" +
         '<p class="line"><span class="status ' + esc(b.status) + '">' +
-        esc(BOARD_STATUS[b.status] || b.status) + "</span></p>" +
-        (b.detail ? '<p class="line">' + esc(b.detail) + "</p>" : "") +
+        esc(BOARD_STATUS[b.status] || b.status) + "</span>" + urgent + "</p>" +
+        (b.detail ? '<p class="line clampable">' + esc(b.detail) + "</p>" : "") +
+        (next ? '<p class="sub">' + esc(next) + "</p>" : "") +
         (b.deliverable_url ? '<p class="line"><a href="' + esc(b.deliverable_url) + '" target="_blank" rel="noopener">依頼ボードを開く</a></p>' : "") +
         "</article>";
     }).join("") || '<p class="empty">依頼なし</p>';
@@ -507,8 +558,14 @@
       var body = items.length
         ? items.slice(0, 4).map(function (t) { return '<p class="line">' + esc(t) + "</p>"; }).join("")
         : '<p class="line empty">対応中の作業・依頼なし</p>';
+      var ask = "";
+      try {
+        if (typeof getToken === "function" && getToken()) {
+          ask = '<button class="btn ask-btn" type="button" data-ask="' + ag.key + '">このAIへ指示</button>';
+        }
+      } catch (e) {}
       return '<article class="card"><div class="name">' + esc(ag.label) + "</div>" +
-        '<div class="sub">' + esc(ag.role) + "｜対応中 " + items.length + "件</div>" + body + "</article>";
+        '<div class="sub">' + esc(ag.role) + "｜対応中 " + items.length + "件</div>" + body + ask + "</article>";
     }).join("");
 
     // 報告履歴

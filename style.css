@@ -198,6 +198,43 @@ h2 {
   color: var(--text);
   box-shadow: var(--shadow);
 }
+.addform textarea {
+  flex: 1 1 100%;
+  font: inherit;
+  font-size: 16px;
+  padding: 9px 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #1D1D1D;
+  color: var(--text);
+  min-height: 96px;
+  resize: vertical;
+}
+.addform input[type="date"] {
+  font: inherit;
+  font-size: 16px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #1D1D1D;
+  color: var(--text);
+  color-scheme: dark;
+}
+.dvchips { display: flex; gap: 8px; flex-wrap: wrap; flex: 1 1 100%; }
+.chipbtn {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  background: #262626;
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.chipbtn:active { opacity: 0.6; }
+.ask-btn { margin-top: 12px; }
+.status.urgent { background: rgba(229, 72, 77, 0.16); color: #ff8589; }
 /* タブ切り替え */
 #tabs {
   display: flex;
