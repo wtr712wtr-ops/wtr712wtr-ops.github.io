@@ -606,6 +606,20 @@
   });
   activateTab((location.hash || "#today").slice(1));
 
+  // アプリ専用の呼び出し形式（data-scheme）が付いたリンクは、まずアプリ起動を試し、開かなければWebへ進む
+  document.addEventListener("click", function (e) {
+    var a = e.target && e.target.closest ? e.target.closest("[data-scheme]") : null;
+    if (!a) return;
+    e.preventDefault();
+    var web = a.getAttribute("href");
+    var done = false;
+    var timer = setTimeout(function () { if (!done) location.href = web; }, 1300);
+    document.addEventListener("visibilitychange", function h() {
+      if (document.hidden) { done = true; clearTimeout(timer); document.removeEventListener("visibilitychange", h); }
+    });
+    location.href = a.getAttribute("data-scheme");
+  });
+
   load().then(render).catch(function (e) {
     document.getElementById("meta").textContent = "読み取りに失敗しました：" + e.message;
   });
