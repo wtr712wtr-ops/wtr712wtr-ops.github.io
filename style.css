@@ -34,7 +34,7 @@ header > * { max-width: 1024px; margin-left: auto; margin-right: auto; padding-l
 header h1 { padding-top: 18px; }
 header .meta { padding-bottom: 4px; }
 header #editbar { padding-bottom: 12px; }
-h1 { font-size: 17px; font-weight: 700; margin: 0; letter-spacing: 0.02em; }
+h1 { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: 0.02em; }
 a { color: #5ea2ff; }
 .hrow { display: flex; align-items: center; justify-content: space-between; }
 .keybtn {
@@ -69,7 +69,7 @@ h2 {
   line-height: 1.3;
 }
 .h2sub { color: var(--sub); font-size: 13px; font-weight: 600; margin-left: 6px; }
-.sub { color: var(--sub); font-size: 12px; }
+.sub { color: var(--sub); font-size: 13px; }
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -85,8 +85,8 @@ h2 {
   box-shadow: none;
 }
 .card:hover { box-shadow: none; transform: none; }
-.card .name { font-size: 16px; font-weight: 700; }
-.card .sub { color: var(--sub); font-size: 12px; margin-top: 3px; }
+.card .name { font-size: 18px; font-weight: 700; }
+.card .sub { color: var(--sub); font-size: 13px; margin-top: 3px; }
 .card .line { font-size: 13px; margin-top: 8px; line-height: 1.55; }
 .dot {
   display: inline-block;
@@ -114,7 +114,7 @@ h2 {
   background: linear-gradient(90deg, #3b82f6, var(--blue));
   border-radius: 999px;
 }
-.progress-note { font-size: 12px; color: var(--sub); margin-top: 6px; }
+.progress-note { font-size: 13px; color: var(--sub); margin-top: 6px; }
 .status {
   display: inline-block;
   font-size: 11px;
@@ -141,11 +141,11 @@ h2 {
 .approval { border-left: 5px solid var(--yellow); }
 .approval .rec { font-size: 13px; margin-top: 6px; line-height: 1.55; }
 .report { font-size: 13px; line-height: 1.6; }
-.report time { color: var(--sub); font-size: 12px; margin-right: 8px; font-weight: 600; }
+.report time { color: var(--sub); font-size: 13px; margin-right: 8px; font-weight: 600; }
 .empty { color: var(--sub); font-size: 13px; }
 .btn {
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   border: 1px solid transparent;
   background: #26272f;
@@ -169,7 +169,7 @@ h2 {
 .addform input[type="text"] {
   flex: 1 1 220px;
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
   padding: 9px 13px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -179,7 +179,7 @@ h2 {
 }
 .addform select {
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
   padding: 9px 11px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -199,7 +199,7 @@ h2 {
 #tabs::-webkit-scrollbar { display: none; }
 .tab {
   font: inherit;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
   padding: 7px 15px;
   border-radius: 999px;
@@ -251,7 +251,7 @@ h2 {
   color: #9aa1ad;
 }
 #tabs-bottom .tab svg { width: 21px; height: 21px; }
-#tabs-bottom .tab .tlabel { font-size: 10.5px; font-weight: 600; line-height: 1.2; }
+#tabs-bottom .tab .tlabel { font-size: 11px; font-weight: 600; line-height: 1.2; }
 #tabs-bottom .tab.active {
   background: rgba(255, 255, 255, 0.13);
   border-color: transparent;
@@ -270,7 +270,7 @@ main { padding-bottom: 118px; }
 
 /* 媒体カードのリンク */
 a.card.medialink { display: block; text-decoration: none; color: inherit; }
-.go { color: var(--blue); font-size: 12px; font-weight: 700; }
+.go { color: var(--blue); font-size: 13px; font-weight: 700; }
 
 /* 今日のタスク */
 .task .trow { display: flex; align-items: center; gap: 10px; }
@@ -289,7 +289,7 @@ a.card.medialink { display: block; text-decoration: none; color: inherit; }
   line-height: 1;
 }
 .tcheck.on { background: var(--green); border-color: var(--green); }
-.ttitle { font-size: 19px; font-weight: 700; line-height: 1.45; }
+.ttitle { font-size: 18px; font-weight: 700; line-height: 1.45; }
 .task.is-done { background: transparent; }
 .task.is-done .ttitle { color: var(--sub); text-decoration: line-through; }
 .task.is-done .ttime { color: var(--gray); }
