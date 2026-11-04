@@ -316,8 +316,10 @@
     // 編集バー（編集キーの設定状態）とタスク追加フォーム
     var eb = document.getElementById("editbar");
     if (!useMock) {
-      eb.innerHTML = getToken()
-        ? '編集モード <button class="btn" id="token-clear">編集をオフにする</button>'
+      var hasToken = !!getToken();
+      eb.classList.toggle("on", hasToken);
+      eb.innerHTML = hasToken
+        ? '編集モード：この端末では完了チェックができます <button class="btn" id="token-clear">編集をオフにする</button>'
         : '<button class="btn" id="token-set">編集キーを設定する</button>';
       var ts = document.getElementById("token-set");
       if (ts) ts.addEventListener("click", function () {
