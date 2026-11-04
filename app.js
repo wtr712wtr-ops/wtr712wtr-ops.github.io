@@ -239,8 +239,26 @@
           (a.recommendation ? '<p class="rec">推奨：' + esc(a.recommendation) + "</p>" : "") +
           (a.reason ? '<p class="rec">理由：' + esc(a.reason) + "</p>" : "") +
           (a.risk ? '<p class="rec">リスク：' + esc(a.risk) + "</p>" : "") +
+          (getToken() ? '<div><button class="btn done-btn appr-ok" data-id="' + a.id + '">承認する</button>' +
+            '<button class="btn move-btn appr-ng" data-id="' + a.id + '">見送る</button></div>' : "") +
           "</article>";
       }).join("");
+      Array.prototype.forEach.call(ap.querySelectorAll(".appr-ok"), function (btn) {
+        btn.addEventListener("click", function () {
+          if (!confirm("この内容で承認しますか？")) return;
+          writeRest("PATCH", "approvals?id=eq." + btn.getAttribute("data-id"), { status: "approved" })
+            .then(function () { reload(); })
+            .catch(function () { alert("承認の記録に失敗しました。通信状態を確認してください。"); });
+        });
+      });
+      Array.prototype.forEach.call(ap.querySelectorAll(".appr-ng"), function (btn) {
+        btn.addEventListener("click", function () {
+          if (!confirm("この内容を見送りますか？")) return;
+          writeRest("PATCH", "approvals?id=eq." + btn.getAttribute("data-id"), { status: "rejected" })
+            .then(function () { reload(); })
+            .catch(function () { alert("記録に失敗しました。通信状態を確認してください。"); });
+        });
+      });
     } else {
       apSec.hidden = true;
     }
