@@ -223,7 +223,7 @@
         '<span class="ttitle">' + esc(t.title) + "</span>";
       return '<article class="card task' + (t.done ? " is-done" : "") + '"><div class="trow">' + head + "</div>" +
         (t.project ? '<div class="sub">' + esc(t.project) + "</div>" : "") +
-        (t.note ? '<p class="line">' + esc(t.note) + "</p>" : "") +
+        (t.note ? '<p class="line clampable">' + esc(t.note) + "</p>" : "") +
         tbtn +
         "</article>";
     }).join("") + '<p class="sub today-count">' + tasks.length + "件中 " + doneCount + "件が完了</p>"
@@ -236,9 +236,9 @@
       apSec.hidden = false;
       ap.innerHTML = data.approvals.map(function (a) {
         return '<article class="card approval"><div class="name">' + esc(a.title) + "</div>" +
-          (a.recommendation ? '<p class="rec">推奨：' + esc(a.recommendation) + "</p>" : "") +
-          (a.reason ? '<p class="rec">理由：' + esc(a.reason) + "</p>" : "") +
-          (a.risk ? '<p class="rec">リスク：' + esc(a.risk) + "</p>" : "") +
+          (a.recommendation ? '<p class="rec clampable">推奨：' + esc(a.recommendation) + "</p>" : "") +
+          (a.reason ? '<p class="rec clampable">理由：' + esc(a.reason) + "</p>" : "") +
+          (a.risk ? '<p class="rec clampable">リスク：' + esc(a.risk) + "</p>" : "") +
           (getToken() ? '<div><button class="btn done-btn appr-ok" data-id="' + a.id + '">承認する</button>' +
             '<button class="btn move-btn appr-ng" data-id="' + a.id + '">見送る</button></div>' : "") +
           "</article>";
@@ -301,8 +301,8 @@
       return '<article class="card"><div class="name"><span class="dot ' + esc(p.status_color) + '"></span>' +
         esc(p.name) + "</div>" +
         '<div class="sub">' + esc(p.status_label) + "</div>" +
-        (p.summary ? '<p class="line">' + esc(p.summary) + "</p>" : "") +
-        (p.next_action ? '<p class="line">次：' + esc(p.next_action) + "</p>" : "") +
+        (p.summary ? '<p class="line clampable">' + esc(p.summary) + "</p>" : "") +
+        (p.next_action ? '<p class="line clampable">次：' + esc(p.next_action) + "</p>" : "") +
         (p.owner_action ? '<p class="warn">あなたの番：' + esc(p.owner_action) + "</p>" : "") +
         "</article>";
     }).join("") || '<p class="empty">案件の登録なし</p>';
@@ -332,6 +332,9 @@
     document.getElementById("works").innerHTML = allCards.join("") || '<p class="empty">進行中の作業なし</p>';
 
     // 編集キー（右上の鍵アイコン）とタスク追加フォーム
+    Array.prototype.forEach.call(document.querySelectorAll(".clampable"), function (el) {
+      el.addEventListener("click", function () { el.classList.toggle("open"); });
+    });
     var kb = document.getElementById("keybtn");
     if (!useMock && kb) {
       kb.classList.toggle("on", !!getToken());
@@ -506,9 +509,9 @@
     }).join("");
 
     // 報告履歴
-    document.getElementById("reports").innerHTML = data.reports.map(function (r) {
+    document.getElementById("reports").innerHTML = data.reports.slice(0, 6).map(function (r) {
       return '<article class="card report"><time>' + esc(fmtTime(r.created_at)) + "</time>" +
-        esc(r.body) + "</article>";
+        '<span class="clampable">' + esc(r.body) + "</span></article>";
     }).join("") || '<p class="empty">報告なし</p>';
   }
 
