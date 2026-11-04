@@ -539,11 +539,11 @@
         "</article>";
     }).join("") || '<p class="empty">依頼なし</p>';
 
-    // 担当AI（作業と依頼から自動集計）
+    // 担当AI（作業と依頼から自動集計）。urlは各AIを直接開くリンク（アプリがあればアプリで開く）
     var AGENTS = [
-      { key: "muse", label: "Muse", role: "開発・制作・運用" },
-      { key: "gpt", label: "GPT", role: "デザイン・画像・相談" },
-      { key: "perplexity", label: "Perplexity", role: "調査" }
+      { key: "muse", label: "Muse", role: "開発・制作・運用", url: "https://muse.ai/" },
+      { key: "gpt", label: "GPT", role: "デザイン・画像・相談", url: "https://chatgpt.com/" },
+      { key: "perplexity", label: "Perplexity", role: "調査", url: "https://www.perplexity.ai/" }
     ];
     document.getElementById("agents").innerHTML = AGENTS.map(function (ag) {
       var items = [];
@@ -561,12 +561,22 @@
       var ask = "";
       try {
         if (typeof getToken === "function" && getToken()) {
-          ask = '<button class="btn ask-btn" type="button" data-ask="' + ag.key + '">このAIへ指示</button>';
+          ask = '<button class="btn" type="button" data-ask="' + ag.key + '">このAIへ指示</button>';
         }
       } catch (e) {}
+      var btns = '<div class="agent-btns"><a class="btn" href="' + ag.url + '" target="_blank" rel="noopener">開く</a>' + ask + "</div>";
       return '<article class="card"><div class="name">' + esc(ag.label) + "</div>" +
-        '<div class="sub">' + esc(ag.role) + "｜対応中 " + items.length + "件</div>" + body + ask + "</article>";
+        '<div class="sub">' + esc(ag.role) + "｜対応中 " + items.length + "件</div>" + body + btns + "</article>";
     }).join("");
+    // 担当AIカードの「このAIへ指示」は、カード描画後に紐付ける（指示フォームへ移動して宛先を選ぶ）
+    Array.prototype.forEach.call(document.querySelectorAll("#agents [data-ask]"), function (b) {
+      b.addEventListener("click", function () {
+        var sel = document.getElementById("dv-ai");
+        if (sel) sel.value = b.getAttribute("data-ask");
+        var t = document.getElementById("dv-title");
+        if (t) { t.scrollIntoView({ block: "center" }); t.focus(); }
+      });
+    });
 
     // 報告履歴
     document.getElementById("reports").innerHTML = data.reports.slice(0, 6).map(function (r) {
