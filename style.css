@@ -361,6 +361,20 @@ span.tcheck2 { cursor: default; }
 .tmeta { font-size: 13px; color: var(--sub); }
 .tfoot .btn { margin-top: 0; margin-left: 0; }
 .today-count { margin-top: 2px; }
+/* Museタブ */
+.muse-head { display: flex; align-items: center; gap: 12px; }
+.muse-ic {
+  flex: none;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: #B6D7BE;
+  color: #0F1A12;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+}
+.openbtn { display: block; margin-top: 14px; text-align: center; text-decoration: none; }
+
 .metric { margin-top: 14px; }
 .metricname { font-size: 15px; color: var(--body); }
 .bignum { font-size: 32px; line-height: 40px; font-weight: 600; color: var(--text); }

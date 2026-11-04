@@ -573,6 +573,15 @@
       return '<article class="card report"><time>' + esc(fmtTime(r.created_at)) + "</time>" +
         '<span class="clampable">' + esc(r.body) + "</span></article>";
     }).join("") || '<p class="empty">報告なし</p>';
+
+    // Museタブの最近の報告（連携タブと同じ報告の最新3件）
+    var rm = document.getElementById("reports-muse");
+    if (rm) {
+      rm.innerHTML = data.reports.slice(0, 3).map(function (r) {
+        return '<article class="card report"><time>' + esc(fmtTime(r.created_at)) + "</time>" +
+          '<span class="clampable">' + esc(r.body) + "</span></article>";
+      }).join("") || '<p class="empty">報告なし</p>';
+    }
   }
 
   // タブ切り替え（今日／案件／作業／数字／連携／報告）
