@@ -211,20 +211,19 @@
     var tasks = data.today_tasks || [];
     var doneCount = tasks.filter(function (t) { return t.done; }).length;
     document.getElementById("today").innerHTML = tasks.length ? tasks.map(function (t) {
-      var tbtn = "";
-      if (!useMock && getToken()) {
-        tbtn = t.done
-          ? '<button class="btn undo-btn" data-tundo="' + esc(t.id) + '">完了を取り消す</button>'
-          : '<button class="btn done-btn" data-tdone="' + esc(t.id) + '">完了にする</button>' +
-            '<button class="btn move-btn" data-tmove="' + esc(t.id) + '">明日へ送る</button>';
-      }
-      var head = (t.task_time ? '<span class="ttime">' + esc(t.task_time) + "</span>" : "") +
-        '<span class="tcheck' + (t.done ? " on" : "") + '">' + (t.done ? "✓" : "") + "</span>" +
-        '<span class="ttitle">' + esc(t.title) + "</span>";
-      return '<article class="card task' + (t.done ? " is-done" : "") + '"><div class="trow">' + head + "</div>" +
-        (t.project ? '<div class="sub">' + esc(t.project) + "</div>" : "") +
-        (t.note ? '<p class="line clampable">' + esc(t.note) + "</p>" : "") +
-        tbtn +
+      var canEdit = !useMock && !!getToken();
+      var check = canEdit
+        ? (t.done
+          ? '<button class="tcheck2 on" data-tundo="' + esc(t.id) + '" aria-label="完了を取り消す">✓</button>'
+          : '<button class="tcheck2" data-tdone="' + esc(t.id) + '" aria-label="完了にする"></button>')
+        : '<span class="tcheck2' + (t.done ? " on" : "") + '">' + (t.done ? "✓" : "") + "</span>";
+      var moveBtn = canEdit && !t.done ? '<button class="btn move-btn" data-tmove="' + esc(t.id) + '">明日へ送る</button>' : "";
+      var metaBits = [t.task_time, t.project].filter(function (x) { return !!x; }).map(function (x) { return esc(x); }).join(" ・ ");
+      return '<article class="card task' + (t.done ? " is-done" : "") + '"><div class="trow2">' + check +
+        '<div class="tmain"><span class="ttitle">' + esc(t.title) + "</span>" +
+        (t.note ? '<div class="tnoterow"><p class="tnote">' + esc(t.note) + '</p><span class="chev">⌄</span></div>' : "") +
+        "</div></div>" +
+        (metaBits || moveBtn ? '<div class="tfoot"><span class="tmeta">' + metaBits + "</span>" + moveBtn + "</div>" : "") +
         "</article>";
     }).join("") + '<p class="sub today-count">' + tasks.length + "件中 " + doneCount + "件が完了</p>"
       : '<p class="empty">今日のタスクはまだ登録なし</p>';
@@ -239,8 +238,8 @@
           (a.recommendation ? '<p class="rec clampable">推奨：' + esc(a.recommendation) + "</p>" : "") +
           (a.reason ? '<p class="rec clampable">理由：' + esc(a.reason) + "</p>" : "") +
           (a.risk ? '<p class="rec clampable">リスク：' + esc(a.risk) + "</p>" : "") +
-          (getToken() ? '<div><button class="btn done-btn appr-ok" data-id="' + a.id + '">承認する</button>' +
-            '<button class="btn move-btn appr-ng" data-id="' + a.id + '">見送る</button></div>' : "") +
+          (getToken() ? '<div class="appr-btns"><button class="btn appr-ok" data-id="' + a.id + '">承認する</button>' +
+            '<button class="btn appr-ng" data-id="' + a.id + '">見送る</button></div>' : "") +
           "</article>";
       }).join("");
       Array.prototype.forEach.call(ap.querySelectorAll(".appr-ok"), function (btn) {
@@ -333,6 +332,9 @@
 
     // 編集キー（右上の鍵アイコン）とタスク追加フォーム
     Array.prototype.forEach.call(document.querySelectorAll(".clampable"), function (el) {
+      el.addEventListener("click", function () { el.classList.toggle("open"); });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".tnote"), function (el) {
       el.addEventListener("click", function () { el.classList.toggle("open"); });
     });
     var kb = document.getElementById("keybtn");

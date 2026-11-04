@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>司令塔｜AI作業の一元管理</title>
-<link rel="stylesheet" href="style.css?v=20261104-2324">
+<link rel="stylesheet" href="style.css?v=20261104-2348">
 </head>
 <body>
 <header>
@@ -12,11 +12,15 @@
     <h1>司令塔</h1>
     <button id="keybtn" class="keybtn" title="編集キーの設定"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15.5" r="4.5"/><path d="M11.3 12.2 20 3.5"/><path d="M15.5 6.5 19 10"/></svg></button>
   </div>
-  <p id="meta" class="meta">読み込み中…</p>
 </header>
 
 <main>
   <div class="panel active" id="panel-today">
+    <div class="phead">
+      <h2 class="ptitle">今日</h2>
+      <p id="meta" class="meta">読み込み中…</p>
+    </div>
+
     <section id="approvals-section" hidden>
       <h2>承認待ち</h2>
       <div id="approvals" class="stack"></div>
@@ -29,15 +33,21 @@
   </div>
 
   <div class="panel" id="panel-media">
+    <div class="phead">
+      <h2 class="ptitle">媒体</h2>
+    </div>
+
     <section>
-      <h2>媒体</h2>
       <div id="media" class="grid"></div>
     </section>
   </div>
 
   <div class="panel" id="panel-projects">
+    <div class="phead">
+      <h2 class="ptitle">案件</h2>
+    </div>
+
     <section>
-      <h2>案件</h2>
       <p class="sub">色の意味：緑＝運用中、黄＝進行中（道半ば）、青＝制作中、赤＝停止・問題、灰＝未着手</p>
       <div id="projects" class="grid"></div>
     </section>
@@ -50,6 +60,10 @@
   </div>
 
   <div class="panel" id="panel-numbers">
+    <div class="phead">
+      <h2 class="ptitle">数字</h2>
+    </div>
+
     <section>
       <h2>数字とPDCA</h2>
       <div id="numbers" class="stack"></div>
@@ -57,6 +71,10 @@
   </div>
 
   <div class="panel" id="panel-board">
+    <div class="phead">
+      <h2 class="ptitle">連携</h2>
+    </div>
+
     <section>
       <h2>AI連携（依頼ボード）</h2>
       <div id="directive"></div>
@@ -83,7 +101,7 @@
   <button class="tab" data-tab="board"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 6 .4l3-3a4 4 0 0 0-5.6-5.6l-1.7 1.7"/><path d="M14 10a4 4 0 0 0-6-.4l-3 3a4 4 0 0 0 5.6 5.6l1.7-1.7"/></svg><span class="tlabel">連携</span></button>
 </nav>
 
-<script src="config.js?v=20261104-2324"></script>
-<script src="app.js?v=20261104-2324"></script>
+<script src="config.js?v=20261104-2348"></script>
+<script src="app.js?v=20261104-2348"></script>
 </body>
 </html>
