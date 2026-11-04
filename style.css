@@ -234,6 +234,8 @@ h2 {
 }
 .chipbtn:active { opacity: 0.6; }
 .ask-btn { margin-top: 12px; }
+.launcher { display: flex; gap: 10px; }
+.lbtn { flex: 1; text-align: center; padding: 12px 4px; }
 .agent-btns { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 .agent-btns .btn { margin-top: 0; }
 a.btn { text-decoration: none; display: inline-block; }
