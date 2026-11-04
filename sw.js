@@ -10,8 +10,12 @@ self.addEventListener("fetch", function (event) {
   if (event.request.method !== "GET") return;
   var url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+  // 画面（ナビゲーション）はHTTPキャッシュを使わず常に最新を取りに行く（配信側の10分キャッシュで古い画面が残るのを防ぐ）
+  var req = event.request.mode === "navigate"
+    ? new Request(event.request.url, { cache: "no-store" })
+    : event.request;
   event.respondWith(
-    fetch(event.request).catch(function () {
+    fetch(req).catch(function () {
       return caches.match(event.request);
     })
   );
