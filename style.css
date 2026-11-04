@@ -36,14 +36,20 @@ header .meta { padding-bottom: 4px; }
 header #editbar { padding-bottom: 12px; }
 h1 { font-size: 17px; font-weight: 700; margin: 0; letter-spacing: 0.02em; }
 a { color: #5ea2ff; }
-#editbar.on {
-  background: #17181f;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 10px 14px;
-  color: #f5c542;
-  font-weight: 700;
+.hrow { display: flex; align-items: center; justify-content: space-between; }
+.keybtn {
+  flex: none;
+  width: 34px; height: 34px;
+  margin-top: 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: var(--sub);
+  cursor: pointer;
 }
+.keybtn svg { width: 17px; height: 17px; }
+.keybtn.on { color: #f5c542; border-color: rgba(245, 184, 0, 0.45); }
 .meta { color: var(--sub); font-size: 13px; margin: 0; }
 .badge {
   font-size: 11px;

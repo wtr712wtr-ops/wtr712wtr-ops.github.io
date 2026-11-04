@@ -313,21 +313,18 @@
       .concat((data.done_items || []).map(function (w) { return workCard(w, true); }));
     document.getElementById("works").innerHTML = allCards.join("") || '<p class="empty">進行中の作業なし</p>';
 
-    // 編集バー（編集キーの設定状態）とタスク追加フォーム
-    var eb = document.getElementById("editbar");
-    if (!useMock) {
-      var hasToken = !!getToken();
-      eb.classList.toggle("on", hasToken);
-      eb.innerHTML = hasToken
-        ? '編集モード：この端末では完了チェックができます <button class="btn" id="token-clear">編集をオフにする</button>'
-        : '<button class="btn" id="token-set">編集キーを設定する</button>';
-      var ts = document.getElementById("token-set");
-      if (ts) ts.addEventListener("click", function () {
-        var t = prompt("編集キーを入力してください（この端末にだけ保存されます）");
-        if (t) { setToken(t.trim()); reload(); }
+    // 編集キー（右上の鍵アイコン）とタスク追加フォーム
+    var kb = document.getElementById("keybtn");
+    if (!useMock && kb) {
+      kb.classList.toggle("on", !!getToken());
+      kb.addEventListener("click", function () {
+        if (getToken()) {
+          if (confirm("編集をオフにしますか？（この端末の編集キーを消します）")) { setToken(""); reload(); }
+        } else {
+          var t = prompt("編集キーを入力してください（この端末にだけ保存されます）");
+          if (t) { setToken(t.trim()); reload(); }
+        }
       });
-      var tc = document.getElementById("token-clear");
-      if (tc) tc.addEventListener("click", function () { setToken(""); reload(); });
 
       var aw = document.getElementById("addwork");
       if (getToken()) {
