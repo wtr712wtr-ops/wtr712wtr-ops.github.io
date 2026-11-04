@@ -464,12 +464,13 @@
           var d = Number(cur.metric_value) - Number(arr[1].metric_value);
           delta = "（前回比 " + (d > 0 ? "+" : "") + fmtNum(d) + "）";
         }
-        return '<p class="line">' + esc(name) + "：" + fmtNum(cur.metric_value) + esc(cur.unit || "") +
-          ' <span class="sub">' + esc(fmtTime(cur.measured_at)) + esc(delta) + "</span></p>";
+        return '<div class="metric"><div class="metricname">' + esc(name) + '</div>' +
+          '<div class="bignum">' + fmtNum(cur.metric_value) + '<span class="bigunit">' + esc(cur.unit || "") + "</span></div>" +
+          '<div class="sub">' + esc(fmtTime(cur.measured_at)) + esc(delta) + "</div></div>";
       }).join("") : '<p class="line empty">結果はまだ記録なし</p>';
       return '<article class="card"><div class="name">' + esc(ms.title) + "</div>" +
         '<div class="sub">' + esc(where) + (period ? "｜" + period : "") + "</div>" +
-        (ms.description ? '<p class="line">' + esc(ms.description) + "</p>" : "") +
+        (ms.description ? '<p class="line clampable">' + esc(ms.description) + "</p>" : "") +
         lines + "</article>";
     }).join("") || '<p class="empty">施策の登録なし</p>';
 
