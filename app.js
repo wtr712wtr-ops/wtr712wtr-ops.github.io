@@ -237,6 +237,11 @@
     } else {
       apSec.hidden = true;
     }
+    var apprBadge = document.getElementById("tab-badge-approvals");
+    if (apprBadge) {
+      apprBadge.textContent = data.approvals.length;
+      apprBadge.style.display = data.approvals.length ? "" : "none";
+    }
 
     // 媒体カード（媒体ごとの直近の作業と進捗）
     document.getElementById("media").innerHTML = data.media_channels.map(function (m) {
@@ -455,6 +460,29 @@
         esc(r.body) + "</article>";
     }).join("") || '<p class="empty">報告なし</p>';
   }
+
+  // タブ切り替え（今日／案件／作業／数字／連携／報告）
+  function activateTab(name) {
+    var found = false;
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
+      var on = b.getAttribute("data-tab") === name;
+      if (on) found = true;
+      b.classList.toggle("active", on);
+    });
+    if (!found) name = "today";
+    Array.prototype.forEach.call(document.querySelectorAll(".panel"), function (p) {
+      p.classList.toggle("active", p.id === "panel-" + name);
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
+    b.addEventListener("click", function () {
+      var name = b.getAttribute("data-tab");
+      try { history.replaceState(null, "", "#" + name); } catch (e) {}
+      activateTab(name);
+      window.scrollTo(0, 0);
+    });
+  });
+  activateTab((location.hash || "#today").slice(1));
 
   load().then(render).catch(function (e) {
     document.getElementById("meta").textContent = "読み取りに失敗しました：" + e.message;

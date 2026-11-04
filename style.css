@@ -172,6 +172,44 @@ h2 {
   color: var(--text);
   box-shadow: var(--shadow);
 }
+/* タブ切り替え */
+#tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-top: 10px;
+  padding-bottom: 12px;
+  scrollbar-width: none;
+}
+#tabs::-webkit-scrollbar { display: none; }
+.tab {
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 7px 15px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--sub);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.tab.active { background: var(--text); color: #fff; border-color: var(--text); }
+.tbadge {
+  background: var(--red);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  margin-left: 5px;
+  vertical-align: 1px;
+}
+.panel { display: none; }
+.panel.active { display: block; }
+.panel > section:first-child { margin-top: 10px; }
+
 /* 今日のタスク */
 .task .trow { display: flex; align-items: center; gap: 10px; }
 .ttime { font-size: 13px; font-weight: 700; color: var(--blue); min-width: 42px; }

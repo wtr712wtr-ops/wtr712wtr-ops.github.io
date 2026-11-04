@@ -11,56 +11,76 @@
   <h1>司令塔</h1>
   <p id="meta" class="meta">読み込み中…</p>
   <p id="editbar" class="meta"></p>
+  <nav id="tabs">
+    <button class="tab active" data-tab="today">今日<span id="tab-badge-approvals" class="tbadge" style="display:none"></span></button>
+    <button class="tab" data-tab="projects">案件</button>
+    <button class="tab" data-tab="works">作業</button>
+    <button class="tab" data-tab="numbers">数字</button>
+    <button class="tab" data-tab="board">連携</button>
+    <button class="tab" data-tab="reports">報告</button>
+  </nav>
 </header>
 
 <main>
-  <section id="today-section">
-    <h2>今日のタスク <span id="today-date" class="h2sub"></span></h2>
-    <div id="today" class="stack"></div>
-  </section>
+  <div class="panel active" id="panel-today">
+    <section id="today-section">
+      <h2>今日のタスク <span id="today-date" class="h2sub"></span></h2>
+      <div id="today" class="stack"></div>
+    </section>
 
-  <section id="approvals-section" hidden>
-    <h2>承認待ち</h2>
-    <div id="approvals" class="stack"></div>
-  </section>
+    <section id="approvals-section" hidden>
+      <h2>承認待ち</h2>
+      <div id="approvals" class="stack"></div>
+    </section>
+  </div>
 
-  <section>
-    <h2>媒体</h2>
-    <div id="media" class="grid"></div>
-  </section>
+  <div class="panel" id="panel-projects">
+    <section>
+      <h2>案件</h2>
+      <p class="sub">色の意味：緑＝運用中、黄＝進行中（道半ば）、青＝制作中、赤＝停止・問題、灰＝未着手</p>
+      <div id="projects" class="grid"></div>
+    </section>
 
-  <section>
-    <h2>案件</h2>
-    <p class="sub">色の意味：緑＝運用中、黄＝進行中（道半ば）、青＝制作中、赤＝停止・問題、灰＝未着手</p>
-    <div id="projects" class="grid"></div>
-  </section>
+    <section>
+      <h2>媒体</h2>
+      <div id="media" class="grid"></div>
+    </section>
+  </div>
 
-  <section>
-    <h2>作業</h2>
-    <div id="addwork"></div>
-    <div id="works" class="stack"></div>
-  </section>
+  <div class="panel" id="panel-works">
+    <section>
+      <h2>作業</h2>
+      <div id="addwork"></div>
+      <div id="works" class="stack"></div>
+    </section>
+  </div>
 
-  <section>
-    <h2>数字とPDCA</h2>
-    <div id="numbers" class="stack"></div>
-  </section>
+  <div class="panel" id="panel-numbers">
+    <section>
+      <h2>数字とPDCA</h2>
+      <div id="numbers" class="stack"></div>
+    </section>
+  </div>
 
-  <section>
-    <h2>AI連携（依頼ボード）</h2>
-    <div id="directive"></div>
-    <div id="board" class="stack"></div>
-  </section>
+  <div class="panel" id="panel-board">
+    <section>
+      <h2>AI連携（依頼ボード）</h2>
+      <div id="directive"></div>
+      <div id="board" class="stack"></div>
+    </section>
 
-  <section>
-    <h2>担当AI</h2>
-    <div id="agents" class="grid"></div>
-  </section>
+    <section>
+      <h2>担当AI</h2>
+      <div id="agents" class="grid"></div>
+    </section>
+  </div>
 
-  <section>
-    <h2>報告履歴</h2>
-    <div id="reports" class="stack"></div>
-  </section>
+  <div class="panel" id="panel-reports">
+    <section>
+      <h2>報告履歴</h2>
+      <div id="reports" class="stack"></div>
+    </section>
+  </div>
 </main>
 
 <script src="config.js"></script>
