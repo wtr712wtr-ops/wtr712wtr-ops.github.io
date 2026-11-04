@@ -244,11 +244,10 @@
     } else {
       apSec.hidden = true;
     }
-    var apprBadge = document.getElementById("tab-badge-approvals");
-    if (apprBadge) {
+    Array.prototype.forEach.call(document.querySelectorAll(".appr-badge"), function (apprBadge) {
       apprBadge.textContent = data.approvals.length;
       apprBadge.style.display = data.approvals.length ? "" : "none";
-    }
+    });
 
     // 媒体カード（媒体ごとの直近の作業と進捗）
     document.getElementById("media").innerHTML = data.media_channels.map(function (m) {
