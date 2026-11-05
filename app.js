@@ -541,9 +541,9 @@
 
     // 担当AI（作業と依頼から自動集計）。urlは各AIを直接開くリンク（アプリがあればアプリで開く）
     var AGENTS = [
-      { key: "muse", label: "Muse", role: "開発・制作・運用", url: "https://muse.ai/", scheme: "hatch://search" },
-      { key: "gpt", label: "GPT", role: "デザイン・画像・相談", url: "https://chatgpt.com/", scheme: "chatgpt://" },
-      { key: "perplexity", label: "Perplexity", role: "調査", url: "https://www.perplexity.ai/", scheme: "perplexity://" }
+      { key: "muse", label: "Muse", role: "開発・制作・運用", url: "https://muse.ai/" },
+      { key: "gpt", label: "GPT", role: "デザイン・画像・相談", url: "https://chatgpt.com/" },
+      { key: "perplexity", label: "Perplexity", role: "調査", url: "https://www.perplexity.ai/" }
     ];
     document.getElementById("agents").innerHTML = AGENTS.map(function (ag) {
       var items = [];
