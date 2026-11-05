@@ -13,8 +13,8 @@ self.addEventListener("push", function (event) {
   var title = data.title || "TOWER";
   var options = {
     body: data.body || "",
-    icon: "icon-192.png",
-    badge: "icon-192.png",
+    icon: "notify-icon.png",
+    badge: "notify-badge.png",
     data: { url: data.url || "./" }
   };
   event.waitUntil(self.registration.showNotification(title, options));
