@@ -589,7 +589,7 @@
     // 報告履歴
     document.getElementById("reports").innerHTML = data.reports.slice(0, 6).map(function (r) {
       return '<article class="card report"><time>' + esc(fmtTime(r.created_at)) + "</time>" +
-        '<span class="clampable">' + esc(r.body) + "</span></article>";
+        '<span class="reportbody">' + esc(r.body) + "</span></article>";
     }).join("") || '<p class="empty">報告なし</p>';
 
   }
