@@ -6,6 +6,32 @@ self.addEventListener("install", function (event) {
 self.addEventListener("activate", function (event) {
   event.waitUntil(self.clients.claim());
 });
+// プッシュ通知の受信：タイトルと本文を表示する
+self.addEventListener("push", function (event) {
+  var data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) { data = {}; }
+  var title = data.title || "TOWER";
+  var options = {
+    body: data.body || "",
+    icon: "icon-192.png",
+    badge: "icon-192.png",
+    data: { url: data.url || "./" }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+// 通知をタップしたらTOWERを開く（開いていれば前面に出す）
+self.addEventListener("notificationclick", function (event) {
+  event.notification.close();
+  var target = (event.notification.data && event.notification.data.url) || "./";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (list) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].url.indexOf(self.location.origin) === 0) return list[i].focus();
+      }
+      return self.clients.openWindow(target);
+    })
+  );
+});
 self.addEventListener("fetch", function (event) {
   if (event.request.method !== "GET") return;
   var url = new URL(event.request.url);

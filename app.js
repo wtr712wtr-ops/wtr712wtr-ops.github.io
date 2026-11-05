@@ -631,3 +631,84 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(function () {});
   });
 }
+
+// ---------------- プッシュ通知（TOWERからの通知） ----------------
+// 右上のベルでオン/オフする。購読情報はSupabaseの push_subscriptions に保存し、
+// 送信はサーバー側（Muse）から行う。編集キーのある端末だけが購読できる。
+(function () {
+  var cfg2 = window.OPS_CONFIG || {};
+  function getToken2() {
+    try { return localStorage.getItem("opsWriteToken") || ""; } catch (e) { return ""; }
+  }
+  function urlB64ToUint8Array(base64String) {
+    var padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    var base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    var raw = atob(base64);
+    var arr = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+  }
+  function bellEl() { return document.getElementById("bellbtn"); }
+  function refreshBell() {
+    var b = bellEl();
+    if (!b || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    navigator.serviceWorker.ready.then(function (reg) {
+      return reg.pushManager.getSubscription();
+    }).then(function (sub) {
+      b.classList.toggle("on", !!sub);
+    }).catch(function () {});
+  }
+  function saveSubscription(sub) {
+    return fetch(cfg2.supabaseUrl.replace(/\/$/, "") + "/rest/v1/push_subscriptions?on_conflict=endpoint", {
+      method: "POST",
+      headers: {
+        apikey: cfg2.anonKey,
+        Authorization: "Bearer " + cfg2.anonKey,
+        "x-ops-token": getToken2(),
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=representation"
+      },
+      body: JSON.stringify({ endpoint: sub.endpoint, subscription: sub.toJSON() })
+    }).then(function (res) { if (!res.ok) throw new Error("SAVE " + res.status); });
+  }
+  function deleteSubscription(endpoint) {
+    return fetch(cfg2.supabaseUrl.replace(/\/$/, "") + "/rest/v1/push_subscriptions?endpoint=eq." + encodeURIComponent(endpoint), {
+      method: "DELETE",
+      headers: {
+        apikey: cfg2.anonKey,
+        Authorization: "Bearer " + cfg2.anonKey,
+        "x-ops-token": getToken2()
+      }
+    }).catch(function () {});
+  }
+  function onBellClick() {
+    if (!getToken2()) { alert("先に右上の鍵で編集キーを設定してください"); return; }
+    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !cfg2.vapidPublicKey) {
+      alert("この端末・ブラウザでは通知が使えません"); return;
+    }
+    navigator.serviceWorker.ready.then(function (reg) {
+      return reg.pushManager.getSubscription().then(function (sub) {
+        if (sub) {
+          if (!confirm("通知をオフにしますか？")) return null;
+          var ep = sub.endpoint;
+          return sub.unsubscribe().then(function () { return deleteSubscription(ep); }).then(function () {
+            refreshBell(); alert("通知をオフにしました");
+          });
+        }
+        return Notification.requestPermission().then(function (perm) {
+          if (perm !== "granted") { alert("通知が許可されませんでした"); return null; }
+          return reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlB64ToUint8Array(cfg2.vapidPublicKey)
+          }).then(saveSubscription).then(function () {
+            refreshBell(); alert("通知をオンにしました。承認待ちやタスクの時刻に、この端末へ通知が届きます");
+          });
+        });
+      });
+    }).catch(function (e) { alert("通知の設定に失敗しました（" + e.message + "）"); });
+  }
+  window.addEventListener("load", function () {
+    var b = bellEl();
+    if (b) { b.addEventListener("click", onBellClick); refreshBell(); }
+  });
+})();
