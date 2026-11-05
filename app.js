@@ -674,11 +674,16 @@ if ("serviceWorker" in navigator) {
       body: JSON.stringify({ endpoint: sub.endpoint, subscription: sub.toJSON() })
     }).then(function (res) {
       if (!res.ok) throw new Error("SAVE " + res.status);
-      // 保存できたかを読み戻して確認する（200でも行が無いケースの切り分け用）
-      return fetch(base + "?endpoint=eq." + encodeURIComponent(sub.endpoint) + "&select=id", {
-        headers: { apikey: cfg2.anonKey, Authorization: "Bearer " + cfg2.anonKey }
-      }).then(function (r2) { return r2.json(); }).then(function (rows) {
-        if (!rows || !rows.length) throw new Error("VERIFY-EMPTY");
+      var postStatus = res.status;
+      return res.text().then(function (postBody) {
+        // 保存できたかを読み戻して確認する（200でも行が無いケースの切り分け用）
+        return fetch(base + "?endpoint=eq." + encodeURIComponent(sub.endpoint) + "&select=id", {
+          headers: { apikey: cfg2.anonKey, Authorization: "Bearer " + cfg2.anonKey }
+        }).then(function (r2) { return r2.json(); }).then(function (rows) {
+          if (!rows || !rows.length) {
+            throw new Error("VERIFY-EMPTY POST=" + postStatus + " BODY=" + String(postBody).slice(0, 120));
+          }
+        });
       });
     });
   }
