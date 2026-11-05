@@ -736,3 +736,21 @@ if ("serviceWorker" in navigator) {
     if (b) { b.addEventListener("click", onBellClick); refreshBell(); }
   });
 })();
+
+// Square予約カード：アプリ（com.squareup.apos）があればアプリで開き、ダメならWebへ
+(function () {
+  var WEB = "https://squareup.com/dashboard/appointments/calendar";
+  var INTENT = "intent://squareup.com/dashboard/appointments/calendar#Intent;scheme=https;package=com.squareup.apos;S.browser_fallback_url=" + encodeURIComponent(WEB) + ";end";
+  window.addEventListener("load", function () {
+    var el = document.getElementById("sq-open");
+    if (!el) return;
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      var t = Date.now();
+      try { location.href = INTENT; } catch (err) {}
+      setTimeout(function () {
+        if (!document.hidden && Date.now() - t < 3000) { location.href = WEB; }
+      }, 1400);
+    });
+  });
+})();
