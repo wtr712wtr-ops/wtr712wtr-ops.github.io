@@ -656,10 +656,13 @@ if ("serviceWorker" in navigator) {
       return reg.pushManager.getSubscription();
     }).then(function (sub) {
       b.classList.toggle("on", !!sub);
+      // 購読があるのにサーバーへ届いていない場合は、開いたついでに保存し直す
+      if (sub && getToken2()) saveSubscription(sub).catch(function () {});
     }).catch(function () {});
   }
   function saveSubscription(sub) {
-    return fetch(cfg2.supabaseUrl.replace(/\/$/, "") + "/rest/v1/push_subscriptions?on_conflict=endpoint", {
+    var base = cfg2.supabaseUrl.replace(/\/$/, "") + "/rest/v1/push_subscriptions";
+    return fetch(base + "?on_conflict=endpoint", {
       method: "POST",
       headers: {
         apikey: cfg2.anonKey,
@@ -669,7 +672,15 @@ if ("serviceWorker" in navigator) {
         Prefer: "resolution=merge-duplicates,return=representation"
       },
       body: JSON.stringify({ endpoint: sub.endpoint, subscription: sub.toJSON() })
-    }).then(function (res) { if (!res.ok) throw new Error("SAVE " + res.status); });
+    }).then(function (res) {
+      if (!res.ok) throw new Error("SAVE " + res.status);
+      // 保存できたかを読み戻して確認する（200でも行が無いケースの切り分け用）
+      return fetch(base + "?endpoint=eq." + encodeURIComponent(sub.endpoint) + "&select=id", {
+        headers: { apikey: cfg2.anonKey, Authorization: "Bearer " + cfg2.anonKey }
+      }).then(function (r2) { return r2.json(); }).then(function (rows) {
+        if (!rows || !rows.length) throw new Error("VERIFY-EMPTY");
+      });
+    });
   }
   function deleteSubscription(endpoint) {
     return fetch(cfg2.supabaseUrl.replace(/\/$/, "") + "/rest/v1/push_subscriptions?endpoint=eq." + encodeURIComponent(endpoint), {
