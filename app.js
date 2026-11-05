@@ -301,8 +301,6 @@
         esc(p.name) + "</div>" +
         '<div class="sub">' + esc(p.status_label) + "</div>" +
         (p.summary ? '<p class="line clampable">' + esc(p.summary) + "</p>" : "") +
-        (p.next_action ? '<p class="line clampable">次：' + esc(p.next_action) + "</p>" : "") +
-        (p.owner_action ? '<p class="warn">あなたの番：' + esc(p.owner_action) + "</p>" : "") +
         "</article>";
     }).join("") || '<p class="empty">案件の登録なし</p>';
 
@@ -322,7 +320,6 @@
         esc(STATUS_LABEL[w.status] || w.status) + "</span></p>" +
         progressHtml(w) +
         (w.status === "blocked" && w.blocked_reason ? '<p class="warn">理由：' + esc(w.blocked_reason) + "</p>" : "") +
-        (w.owner_action ? '<p class="warn">あなたの番：' + esc(w.owner_action) + "</p>" : "") +
         btn +
         "</article>";
     };
