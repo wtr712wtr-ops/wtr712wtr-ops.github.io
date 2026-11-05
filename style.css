@@ -334,12 +334,13 @@ a.card.medialink { display: block; text-decoration: none; color: inherit; }
 .trow2 { display: flex; align-items: flex-start; gap: 14px; }
 .tcheck2 {
   flex: none;
-  width: 30px; height: 30px;
+  position: relative;
+  width: 23px; height: 23px;
   border-radius: 50%;
   border: 2px solid #A8A8A8;
   background: transparent;
   color: transparent;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 800;
   font-family: inherit;
   display: inline-flex;
@@ -350,6 +351,7 @@ a.card.medialink { display: block; text-decoration: none; color: inherit; }
   padding: 0;
   cursor: pointer;
 }
+button.tcheck2::after { content: ""; position: absolute; inset: -10px; }
 span.tcheck2 { cursor: default; }
 .tcheck2.on { background: #B6D7BE; border-color: #B6D7BE; color: #0F1A12; }
 .tmain { flex: 1; min-width: 0; }
