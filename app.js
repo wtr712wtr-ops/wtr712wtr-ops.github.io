@@ -11,8 +11,8 @@
   var MOCK = {
     projects: [
       { id: "p1", slug: "the-gym", name: "THE GYM", status_label: "運用中", status_color: "green", summary: "テーマ投稿は火・金に公開", next_action: "11月6日分の画像を検品", owner_action: "", sort_order: 1, updated_at: "2026-11-03T12:00:00+09:00" },
-      { id: "p2", slug: "corporate-line", name: "法人LINE", status_label: "本番テスト再実施予定", status_color: "yellow", summary: "検証は完了。本番の塞ぎ予約は鍵の種類が原因で未作成", next_action: "buyer-level の鍵で再実施", owner_action: "11月4日18時に承認操作", sort_order: 3, updated_at: "2026-11-03T19:00:00+09:00" },
-      { id: "p3", slug: "spotter", name: "SPOTTER", status_label: "開発中", status_color: "yellow", summary: "実装完了。試験用DBへの反映が残り", next_action: "migration 適用と通し確認", owner_action: "ログインとDBパスワード入力", sort_order: 4, updated_at: "2026-11-03T18:00:00+09:00" }
+      { id: "p2", slug: "corporate-line", name: "法人LINE", status_label: "進行中", status_color: "yellow", summary: "検証は完了。本番の塞ぎ予約は鍵の種類が原因で未作成", next_action: "buyer-level の鍵で再実施", owner_action: "11月4日18時に承認操作", sort_order: 3, updated_at: "2026-11-03T19:00:00+09:00" },
+      { id: "p3", slug: "spotter", name: "SPOTTER", status_label: "進行中", status_color: "yellow", summary: "実装完了。試験用DBへの反映が残り", next_action: "migration 適用と通し確認", owner_action: "ログインとDBパスワード入力", sort_order: 4, updated_at: "2026-11-03T18:00:00+09:00" }
     ],
     media_channels: [
       { id: "m1", slug: "instagram", name: "Instagram", account_label: "@thegym_fit", sort_order: 1 },
@@ -197,6 +197,30 @@
       esc(restText) + "</p>";
   }
 
+  // 案件カード用：その案件に紐づく作業すべての工程を合計した進行バー。
+  // 進行中の作業と完了済みの作業の両方を対象にする。工程を持つ作業が無ければ出さない。
+  function projectProgressHtml(p, works, doneWorks) {
+    var linked = (works || []).concat(doneWorks || []).filter(function (w) {
+      return w.project_id === p.id;
+    });
+    var total = 0, done = 0, rest = [];
+    linked.forEach(function (w) {
+      var t = w.steps_total || 0;
+      if (!t) return;
+      total += t;
+      done += (w.status === "done") ? t : Math.min(w.steps_done || 0, t);
+      if (w.status !== "done") {
+        (w.steps || []).forEach(function (s) { if (!s.done) rest.push(s.label); });
+      }
+    });
+    if (!total) return "";
+    var pct = Math.round((done / total) * 100);
+    var restText = rest.length ? "残り：" + rest.join("、") : "全工程が完了";
+    return '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+      '<p class="progress-note">工程 ' + done + "/" + total + " 完了（" + pct + "%）｜" +
+      esc(restText) + "</p>";
+  }
+
   function render(data) {
     document.getElementById("meta").innerHTML =
       (useMock ? '<span class="badge">モック表示</span> ' : "") +
@@ -312,6 +336,7 @@
         esc(p.name) + "</div>" +
         '<div class="sub">' + esc(p.status_label) + "</div>" +
         (p.summary ? '<p class="line clampable">' + esc(p.summary) + "</p>" : "") +
+        projectProgressHtml(p, data.work_items, data.done_items) +
         "</article>";
     }).join("") || '<p class="empty">案件の登録なし</p>';
 

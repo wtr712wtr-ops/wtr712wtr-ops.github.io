@@ -105,6 +105,8 @@ h2 {
 .dot.red { background: var(--red); }
 .dot.blue { background: var(--blue); }
 .dot.gray { background: var(--gray); }
+.legend .dot { margin-left: 12px; }
+.legend .dot:first-of-type { margin-left: 0; }
 .bar {
   height: 7px;
   background: #303030;
