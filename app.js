@@ -210,6 +210,17 @@
     }
     var tasks = data.today_tasks || [];
     var doneCount = tasks.filter(function (t) { return t.done; }).length;
+    var tpSec = document.getElementById("today-progress");
+    if (tpSec) {
+      if (tasks.length) {
+        var pct = Math.round(doneCount / tasks.length * 100);
+        tpSec.hidden = false;
+        document.getElementById("today-bar-fill").style.width = pct + "%";
+        document.getElementById("today-bar-note").textContent = "今日のタスク " + doneCount + "/" + tasks.length + " 件完了 ・ " + pct + "%";
+      } else {
+        tpSec.hidden = true;
+      }
+    }
     document.getElementById("today").innerHTML = tasks.length ? tasks.map(function (t) {
       var canEdit = !useMock && !!getToken();
       var check = canEdit
@@ -225,7 +236,7 @@
         "</div></div>" +
         (metaBits || moveBtn ? '<div class="tfoot"><span class="tmeta">' + metaBits + "</span>" + moveBtn + "</div>" : "") +
         "</article>";
-    }).join("") + '<p class="sub today-count">' + tasks.length + "件中 " + doneCount + "件が完了</p>"
+    }).join("")
       : '<p class="empty">今日のタスクはまだ登録なし</p>';
 
     // 承認待ち
