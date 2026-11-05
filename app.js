@@ -107,6 +107,13 @@
       else localStorage.removeItem("opsWriteToken");
     } catch (e) { /* 保存できない環境では編集不可のまま */ }
   }
+  // ボタンは常時表示し、押した時点でキーが無ければその場で入力を求める（2026年11月5日変更）。
+  function ensureToken() {
+    if (getToken()) return true;
+    var t = prompt("編集キーを入力してください（この端末にだけ保存されます）");
+    if (t) { setToken(t.trim()); return true; }
+    return false;
+  }
   function writeRest(method, path, payload) {
     return fetch(cfg.supabaseUrl.replace(/\/$/, "") + "/rest/v1/" + path, {
       method: method,
@@ -273,13 +280,14 @@
           (a.recommendation ? '<p class="rec clampable">推奨：' + esc(a.recommendation) + "</p>" : "") +
           (a.reason ? '<p class="rec clampable">理由：' + esc(a.reason) + "</p>" : "") +
           (a.risk ? '<p class="rec clampable">リスク：' + esc(a.risk) + "</p>" : "") +
-          (getToken() ? '<div class="appr-btns"><button class="btn appr-ok" data-id="' + a.id + '">承認する</button>' +
-            '<button class="btn appr-ng" data-id="' + a.id + '">見送る</button></div>' : "") +
+          '<div class="appr-btns"><button class="btn appr-ok" data-id="' + a.id + '">承認する</button>' +
+            '<button class="btn appr-ng" data-id="' + a.id + '">見送る</button></div>' +
           "</article>";
       }).join("");
       Array.prototype.forEach.call(ap.querySelectorAll(".appr-ok"), function (btn) {
         btn.addEventListener("click", function () {
           if (!confirm("この内容で承認しますか？")) return;
+          if (!ensureToken()) return;
           writeRest("PATCH", "approvals?id=eq." + btn.getAttribute("data-id"), { status: "approved" })
             .then(function () { reload(); })
             .catch(function () { alert("承認の記録に失敗しました。通信状態を確認してください。"); });
@@ -288,6 +296,7 @@
       Array.prototype.forEach.call(ap.querySelectorAll(".appr-ng"), function (btn) {
         btn.addEventListener("click", function () {
           if (!confirm("この内容を見送りますか？")) return;
+          if (!ensureToken()) return;
           writeRest("PATCH", "approvals?id=eq." + btn.getAttribute("data-id"), { status: "rejected" })
             .then(function () { reload(); })
             .catch(function () { alert("記録に失敗しました。通信状態を確認してください。"); });
