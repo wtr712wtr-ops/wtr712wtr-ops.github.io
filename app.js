@@ -336,6 +336,8 @@
         esc(p.name) + "</div>" +
         '<div class="sub">' + esc(p.status_label) + "</div>" +
         (p.summary ? '<p class="line clampable">' + esc(p.summary) + "</p>" : "") +
+        (p.next_action ? '<p class="line">次：' + esc(p.next_action) + "</p>" : "") +
+        (p.owner_action ? '<p class="line warn">あなたの番：' + esc(p.owner_action) + "</p>" : "") +
         projectProgressHtml(p, data.work_items, data.done_items) +
         "</article>";
     }).join("") || '<p class="empty">案件の登録なし</p>';
