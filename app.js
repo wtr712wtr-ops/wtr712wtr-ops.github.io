@@ -260,12 +260,23 @@
           : '<button class="tcheck2" data-tdone="' + esc(t.id) + '" aria-label="完了にする"></button>')
         : '<span class="tcheck2' + (t.done ? " on" : "") + '">' + (t.done ? "✓" : "") + "</span>";
       var moveBtn = canEdit && !t.done ? '<button class="btn move-btn" data-tmove="' + esc(t.id) + '">明日へ送る</button>' : "";
+      var noteText = t.note || "";
+      var stLabel = "";
+      var stMatch = noteText.match(/^【状態：(進行中|待ち|未定)】\s*/);
+      if (stMatch) { stLabel = stMatch[1]; noteText = noteText.slice(stMatch[0].length); }
+      var chip = "";
+      if (!t.task_time && !t.done) {
+        if (!stLabel) stLabel = "未定";
+        var stClass = stLabel === "進行中" ? "in_progress" : (stLabel === "待ち" ? "waiting_approval" : "planned");
+        chip = '<span class="status ' + stClass + '">' + stLabel + "</span>";
+      }
       var metaBits = [t.task_time, t.project].filter(function (x) { return !!x; }).map(function (x) { return esc(x); }).join(" ・ ");
+      var metaHtml = (chip && metaBits ? chip + " " : chip) + metaBits;
       return '<article class="card task' + (t.done ? " is-done" : "") + '"><div class="trow2">' + check +
         '<div class="tmain"><span class="ttitle">' + esc(t.title) + "</span>" +
-        (t.note ? '<div class="tnoterow"><p class="tnote">' + esc(t.note) + '</p><span class="chev">⌄</span></div>' : "") +
+        (noteText ? '<div class="tnoterow"><p class="tnote">' + esc(noteText) + '</p><span class="chev">⌄</span></div>' : "") +
         "</div></div>" +
-        (metaBits || moveBtn ? '<div class="tfoot"><span class="tmeta">' + metaBits + "</span>" + moveBtn + "</div>" : "") +
+        (metaHtml || moveBtn ? '<div class="tfoot"><span class="tmeta">' + metaHtml + "</span>" + moveBtn + "</div>" : "") +
         "</article>";
     }).join("")
       : '<p class="empty">今日のタスクはまだ登録なし</p>';
