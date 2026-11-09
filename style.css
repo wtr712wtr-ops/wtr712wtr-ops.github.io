@@ -80,6 +80,12 @@ h2 {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 14px;
 }
+/* 媒体タブは2列固定（2026-11-09 わたるの要望） */
+#media {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+#media .card { padding: 12px; }
 .stack { display: flex; flex-direction: column; gap: 14px; }
 .card {
   background: var(--card);
