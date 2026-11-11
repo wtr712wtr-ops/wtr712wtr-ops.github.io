@@ -260,6 +260,7 @@
           : '<button class="tcheck2" data-tdone="' + esc(t.id) + '" aria-label="完了にする"></button>')
         : '<span class="tcheck2' + (t.done ? " on" : "") + '">' + (t.done ? "✓" : "") + "</span>";
       var moveBtn = canEdit && !t.done ? '<button class="btn move-btn" data-tmove="' + esc(t.id) + '">明日へ送る</button>' : "";
+      var delBtn = canEdit ? '<button class="btn del-btn" data-tdel="' + esc(t.id) + '" data-ttitle="' + esc(t.title) + '">削除</button>' : "";
       var noteText = t.note || "";
       var stLabel = "";
       var stMatch = noteText.match(/^【状態：(進行中|待ち|未定)】\s*/);
@@ -276,7 +277,7 @@
         '<div class="tmain"><span class="ttitle">' + esc(t.title) + "</span>" +
         (noteText ? '<div class="tnoterow"><p class="tnote">' + esc(noteText) + '</p><span class="chev">⌄</span></div>' : "") +
         "</div></div>" +
-        (metaHtml || moveBtn ? '<div class="tfoot"><span class="tmeta">' + metaHtml + "</span>" + moveBtn + "</div>" : "") +
+        (metaHtml || moveBtn || delBtn ? '<div class="tfoot"><span class="tmeta">' + metaHtml + "</span>" + moveBtn + delBtn + "</div>" : "") +
         "</article>";
     }).join("")
       : '<p class="empty">今日のタスクはまだ登録なし</p>';
@@ -530,6 +531,12 @@
             // 明日分に同じタスクが既にある場合は、今日分を消して一本化する
             writeRest("DELETE", "daily_tasks?id=eq." + id, null).then(reload).catch(writeFailed);
           });
+        });
+      });
+      Array.prototype.forEach.call(document.querySelectorAll("[data-tdel]"), function (b) {
+        b.addEventListener("click", function () {
+          if (!window.confirm("このタスクを削除しますか？\n" + (b.getAttribute("data-ttitle") || ""))) return;
+          writeRest("DELETE", "daily_tasks?id=eq." + encodeURIComponent(b.getAttribute("data-tdel")), null).then(reload).catch(writeFailed);
         });
       });
     }
