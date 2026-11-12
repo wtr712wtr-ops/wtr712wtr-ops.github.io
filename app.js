@@ -240,23 +240,21 @@
       tdEl.textContent = Number(tparts[1]) + "/" + Number(tparts[2]);
     }
     var tasks = data.today_tasks || [];
-    var remainCount = tasks.filter(function (t) { return !t.done; }).length;
+    var doneCount = tasks.filter(function (t) { return t.done; }).length;
     var tpSec = document.getElementById("today-progress");
     if (tpSec) {
       if (tasks.length) {
-        // 完了したタスクは削除する運用のため、一覧に残るのは未完了だけ。
-        // 完了率（%）は出さず、残り件数だけを表示する。
+        var pct = Math.round(doneCount / tasks.length * 100);
         tpSec.hidden = false;
-        var barEl = tpSec.querySelector(".bar");
-        if (barEl) barEl.style.display = "none";
-        document.getElementById("today-bar-note").textContent = remainCount
-          ? "今日のタスク 残り " + remainCount + " 件"
-          : "今日のタスク 全件完了";
+        document.getElementById("today-bar-fill").style.width = pct + "%";
+        document.getElementById("today-bar-note").textContent = "今日のタスク " + doneCount + "/" + tasks.length + " 件完了 ・ " + pct + "%";
       } else {
         tpSec.hidden = true;
       }
     }
-    document.getElementById("today").innerHTML = tasks.length ? tasks.map(function (t) {
+    // 一覧には未完了だけを出す（完了分はバー側の件数にだけ数える）
+    var visibleTasks = tasks.filter(function (t) { return !t.done; });
+    document.getElementById("today").innerHTML = visibleTasks.length ? visibleTasks.map(function (t) {
       var canEdit = !useMock && !!getToken();
       var check = canEdit
         ? (t.done
@@ -284,7 +282,7 @@
         (metaHtml || moveBtn || delBtn ? '<div class="tfoot"><span class="tmeta">' + metaHtml + "</span>" + moveBtn + delBtn + "</div>" : "") +
         "</article>";
     }).join("")
-      : '<p class="empty">今日のタスクはまだ登録なし</p>';
+      : (tasks.length ? '<p class="empty">今日のタスクは全件完了</p>' : '<p class="empty">今日のタスクはまだ登録なし</p>');
 
     // 承認待ち
     var apSec = document.getElementById("approvals-section");
