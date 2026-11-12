@@ -240,14 +240,18 @@
       tdEl.textContent = Number(tparts[1]) + "/" + Number(tparts[2]);
     }
     var tasks = data.today_tasks || [];
-    var doneCount = tasks.filter(function (t) { return t.done; }).length;
+    var remainCount = tasks.filter(function (t) { return !t.done; }).length;
     var tpSec = document.getElementById("today-progress");
     if (tpSec) {
       if (tasks.length) {
-        var pct = Math.round(doneCount / tasks.length * 100);
+        // 完了したタスクは削除する運用のため、一覧に残るのは未完了だけ。
+        // 完了率（%）は出さず、残り件数だけを表示する。
         tpSec.hidden = false;
-        document.getElementById("today-bar-fill").style.width = pct + "%";
-        document.getElementById("today-bar-note").textContent = "今日のタスク " + doneCount + "/" + tasks.length + " 件完了 ・ " + pct + "%";
+        var barEl = tpSec.querySelector(".bar");
+        if (barEl) barEl.style.display = "none";
+        document.getElementById("today-bar-note").textContent = remainCount
+          ? "今日のタスク 残り " + remainCount + " 件"
+          : "今日のタスク 全件完了";
       } else {
         tpSec.hidden = true;
       }
