@@ -160,6 +160,9 @@
     // 今日のタスクの取得失敗（テーブル未作成など）で画面全体を落とさない
     var todayFetch = rest("daily_tasks?select=*&task_date=eq." + todayJst() +
       "&order=done.asc,sort_order.asc,id.asc&limit=100").catch(function () { return []; });
+    // Square 予約の断片（reports 内の専用1行）。取得失敗で画面全体を落とさない
+    var squareFetch = rest("reports?select=body&body=like.*SQUARE_JSON:*&order=created_at.desc&limit=1")
+      .catch(function () { return []; });
     return Promise.all([
       rest("projects?select=*&order=sort_order.asc"),
       rest("media_channels?select=*&order=sort_order.asc"),
@@ -170,9 +173,16 @@
       rest("board_requests?select=*,project:projects(name,slug)&order=created_at.desc&limit=20"),
       rest("measures?select=*,project:projects(name,slug),media:media_channels(name,slug)&order=created_at.desc&limit=20"),
       rest("measure_results?select=*&order=measured_at.desc&limit=300"),
-      todayFetch
+      todayFetch,
+      squareFetch
     ]).then(function (r) {
-      return { projects: r[0], media_channels: r[1], work_items: r[2], approvals: r[3], reports: r[4], done_items: r[5], board_requests: r[6], measures: r[7], measure_results: r[8], today_tasks: r[9] };
+      var square = null;
+      var sqRows = r[10] || [];
+      if (sqRows.length && sqRows[0].body) {
+        var sqMatch = String(sqRows[0].body).match(/SQUARE_JSON:(\{.*\})/);
+        if (sqMatch) { try { square = JSON.parse(sqMatch[1]); } catch (e) { square = null; } }
+      }
+      return { projects: r[0], media_channels: r[1], work_items: r[2], approvals: r[3], reports: r[4], done_items: r[5], board_requests: r[6], measures: r[7], measure_results: r[8], today_tasks: r[9], square: square };
     });
   }
 
@@ -323,6 +333,27 @@
       apprBadge.textContent = data.approvals.length;
       apprBadge.style.display = data.approvals.length ? "" : "none";
     });
+
+    // 今日の予約（Square）。連携基盤から1時間ごとに取り込んだ断片だけを表示する。
+    // 顧客の名前は断片に含まれない。当日の断片が無い・古い場合は出さない。
+    var bkSec = document.getElementById("bookings-section");
+    var sq = data.square;
+    if (bkSec) {
+      if (sq && sq.date === todayJst() && Array.isArray(sq.items)) {
+        bkSec.hidden = false;
+        var bkMeta = "今日 " + sq.todayCount + "件 ・ 今月 " + sq.monthCount + "件";
+        if (sq.updatedAt) bkMeta += "（" + String(sq.updatedAt).slice(11, 16) + "時点）";
+        document.getElementById("bookings-meta").textContent = bkMeta;
+        document.getElementById("bookings").innerHTML = sq.items.length ? sq.items.map(function (it) {
+          return '<article class="card"><div class="trow2">' +
+            '<span class="ttitle" style="flex:none">' + esc(it.time) + "</span>" +
+            '<div class="tmain"><span class="ttitle">' + esc(it.type) + "</span></div>" +
+            '<span class="go">' + esc(it.staff) + "</span></div></article>";
+        }).join("") : '<p class="empty">今日の予約はありません</p>';
+      } else {
+        bkSec.hidden = true;
+      }
+    }
 
     // 媒体カード（媒体ごとの直近の作業と進捗）。カードを押すと各媒体へ飛ぶ
     var MEDIA_LINKS = {
