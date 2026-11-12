@@ -342,6 +342,7 @@
       if (sq && sq.date === todayJst() && Array.isArray(sq.items)) {
         bkSec.hidden = false;
         var bkMeta = "今日 " + sq.todayCount + "件 ・ 今月 " + sq.monthCount + "件";
+        if (sq.recurringExcluded) bkMeta += " ・ 定期予約は含まれません";
         if (sq.updatedAt) bkMeta += "（" + String(sq.updatedAt).slice(11, 16) + "時点）";
         document.getElementById("bookings-meta").textContent = bkMeta;
         document.getElementById("bookings").innerHTML = sq.items.length ? sq.items.map(function (it) {
@@ -349,7 +350,7 @@
             '<span class="ttitle" style="flex:none">' + esc(it.time) + "</span>" +
             '<div class="tmain"><span class="ttitle">' + esc(it.type) + "</span></div>" +
             '<span class="go">' + esc(it.staff) + "</span></div></article>";
-        }).join("") : '<p class="empty">今日の予約はありません</p>';
+        }).join("") : '<p class="empty">' + (sq.recurringExcluded ? "通常予約はありません（定期予約は表示されません）" : "今日の予約はありません") + '</p>';
       } else {
         bkSec.hidden = true;
       }
