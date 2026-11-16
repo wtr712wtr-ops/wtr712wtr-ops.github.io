@@ -78,6 +78,15 @@
     today_tasks: [
       { id: 1, task_date: "2026-11-04", title: "法人LINE 本番Square再実施（buyer-levelトークンで作成）", task_time: "18:00", project: null, note: "", done: false, done_at: null, sort_order: 1 },
       { id: 2, task_date: "2026-11-04", title: "Threads第1週 #7投稿", task_time: "20:30", project: "ミューズの作業", note: "", done: true, done_at: "2026-11-04T20:30:00+09:00", sort_order: 2 }
+    ],
+    measures: [
+      { id: "ms1", title: "従量課金APIクレジット", description: "", project: null, media: null, started_on: null, ended_on: null }
+    ],
+    measure_results: [
+      { id: "mr1", measure_id: "ms1", metric_name: "Perplexity 残り", metric_value: 9.86, unit: "$", measured_at: "2026-11-16T15:56:00+09:00", note: "" },
+      { id: "mr2", measure_id: "ms1", metric_name: "Perplexity 累計使用", metric_value: 0.14, unit: "$", measured_at: "2026-11-16T15:56:00+09:00", note: "" },
+      { id: "mr3", measure_id: "ms1", metric_name: "Gemini 残り", metric_value: 0, unit: "円", measured_at: "2026-11-12T23:59:00+09:00", note: "" },
+      { id: "mr4", measure_id: "ms1", metric_name: "Gemini 累計使用", metric_value: 800, unit: "円", measured_at: "2026-11-12T23:59:00+09:00", note: "" }
     ]
   };
 
@@ -284,6 +293,60 @@
     }).join("")
       : (tasks.length ? '<p class="empty">今日のタスクは全件完了</p>' : '<p class="empty">今日のタスクはまだ登録なし</p>');
 
+    // APIクレジット（目安）— measures の「従量課金APIクレジット」の最新値から作る。
+    // 残りは使用記録ベースの目安（残高を返す公式APIが無いため）。
+    var credSec = document.getElementById("credits-section");
+    if (credSec) {
+      var creditMeasure = (data.measures || []).filter(function (m) {
+        return m.title === "従量課金APIクレジット";
+      })[0];
+      if (creditMeasure) {
+        var latest = {};
+        (data.measure_results || []).forEach(function (r) {
+          if (r.measure_id !== creditMeasure.id) return;
+          if (!latest[r.metric_name]) latest[r.metric_name] = r; // measured_at の新しい順で取得済み
+        });
+        var usd2 = function (v) { return "$" + Number(v).toFixed(2); };
+        var jpy0 = function (v) { return "¥" + Math.round(Number(v)).toLocaleString("ja-JP"); };
+        var creditChip = function (label, mainText, subText, low) {
+          return '<article class="card credit' + (low ? " low" : "") + '"><div class="name">' +
+            esc(label) + (low ? ' <span class="status blocked">残りわずか</span>' : "") + "</div>" +
+            '<div class="creditnum">' + esc(mainText) + "</div>" +
+            (subText ? '<div class="sub">' + esc(subText) + "</div>" : "") + "</article>";
+        };
+        var chips = [];
+        var pRem = latest["Perplexity 残り"], pCum = latest["Perplexity 累計使用"];
+        if (pRem || pCum) {
+          var pSub = [];
+          if (pCum) pSub.push("累計 " + usd2(pCum.metric_value));
+          var pAt = (pRem || pCum).measured_at;
+          if (pAt) pSub.push("最終利用 " + fmtTime(pAt));
+          chips.push(creditChip("Perplexity",
+            pRem ? "残り " + usd2(pRem.metric_value) : "累計 " + usd2(pCum.metric_value),
+            pSub.join("｜"), !!(pRem && Number(pRem.metric_value) < 2)));
+        }
+        var gRem = latest["Gemini 残り"], gCum = latest["Gemini 累計使用"];
+        if (gRem || gCum) {
+          var gSub = [];
+          if (gCum) gSub.push("累計 " + jpy0(gCum.metric_value));
+          var gAt = (gRem || gCum).measured_at;
+          if (gAt) gSub.push("最終利用 " + fmtTime(gAt));
+          chips.push(creditChip("Gemini",
+            gRem ? "残り " + jpy0(gRem.metric_value) : "累計 " + jpy0(gCum.metric_value),
+            gSub.join("｜"), false));
+        }
+        var oCum = latest["OpenAI 累計使用"];
+        chips.push(creditChip("OpenAI",
+          oCum ? "累計 " + usd2(oCum.metric_value) : "累計 記録なし",
+          oCum && oCum.measured_at ? "最終利用 " + fmtTime(oCum.measured_at) : "記録はこれから",
+          false));
+        credSec.hidden = false;
+        document.getElementById("credits").innerHTML = chips.join("");
+      } else {
+        credSec.hidden = true;
+      }
+    }
+
     // 承認待ち
     var apSec = document.getElementById("approvals-section");
     var ap = document.getElementById("approvals");
@@ -339,7 +402,6 @@
       line_stamps: "https://creator.line.me/",
       booth: "https://manage.booth.pm/"
     };
-    
     document.getElementById("media").innerHTML = data.media_channels.map(function (m) {
       var works = data.work_items.filter(function (w) { return w.media_id === m.id; });
       var head = works[0];

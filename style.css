@@ -396,3 +396,9 @@ span.tcheck2 { cursor: default; }
 .metricname { font-size: 15px; color: var(--body); }
 .bignum { font-size: 32px; line-height: 40px; font-weight: 600; color: var(--text); }
 .bigunit { font-size: 16px; font-weight: 600; color: var(--body); margin-left: 4px; }
+
+/* APIクレジット（今日タブの小さなカード） */
+.credits-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.creditnum { font-size: 24px; line-height: 32px; font-weight: 600; color: var(--text); margin-top: 6px; }
+.credit.low { outline: 1px solid rgba(229, 72, 77, 0.55); }
+.credit.low .creditnum { color: #ff8589; }
