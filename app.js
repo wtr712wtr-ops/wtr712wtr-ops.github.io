@@ -334,9 +334,12 @@
       gbp: "https://www.google.com/maps/search/?api=1&query=THE%20GYM%20%E5%90%8D%E5%8F%A4%E5%B1%8B%E5%B8%82%E7%B7%91%E5%8C%BA%E6%BB%9D%E3%83%8E%E6%B0%B4",
       note: "https://note.com/wataru_gym_ai",
       youtube: "https://www.youtube.com/@ParallelJapanWorld",
+      instagram_parallel: "https://www.instagram.com/paralleljapanworld/",
+      tiktok: "https://www.tiktok.com/@paralleljapanworld",
       line_stamps: "https://creator.line.me/",
       booth: "https://manage.booth.pm/"
     };
+    
     document.getElementById("media").innerHTML = data.media_channels.map(function (m) {
       var works = data.work_items.filter(function (w) { return w.media_id === m.id; });
       var head = works[0];
