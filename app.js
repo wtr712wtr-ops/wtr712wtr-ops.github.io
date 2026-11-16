@@ -307,7 +307,28 @@
           if (!latest[r.metric_name]) latest[r.metric_name] = r; // measured_at の新しい順で取得済み
         });
         var usd2 = function (v) { return "$" + Number(v).toFixed(2); };
+        var usdSub = function (v) { var n = Number(v); return "$" + (n === 0 ? "0" : String(Number(n.toFixed(4)))); };
         var jpy0 = function (v) { return "¥" + Math.round(Number(v)).toLocaleString("ja-JP"); };
+        // 「今月」は使用イベント（1回の使用ごとの記録）を当月（JST）分だけ合算する。
+        // 月別の内訳が無い過去分はイベントが無いため、今月には入らない。
+        var ymJst = function (d) {
+          var parts = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit" }).formatToParts(d);
+          var y = "", m = "";
+          parts.forEach(function (p) { if (p.type === "year") y = p.value; if (p.type === "month") m = p.value; });
+          return y + "-" + m;
+        };
+        var nowYm = ymJst(new Date());
+        var usageStats = function (label) {
+          var month = 0, total = 0;
+          (data.measure_results || []).forEach(function (r) {
+            if (r.measure_id !== creditMeasure.id) return;
+            if (r.metric_name !== label + " 使用イベント") return;
+            var v = Number(r.metric_value) || 0;
+            total += v;
+            if (ymJst(new Date(r.measured_at)) === nowYm) month += v;
+          });
+          return { month: month, total: total };
+        };
         var creditChip = function (label, mainText, subText, low) {
           return '<article class="card credit' + (low ? " low" : "") + '"><div class="name">' +
             esc(label) + (low ? ' <span class="status blocked">残りわずか</span>' : "") + "</div>" +
@@ -315,33 +336,44 @@
             (subText ? '<div class="sub">' + esc(subText) + "</div>" : "") + "</article>";
         };
         var chips = [];
+        var hasUnallocated = false;
         var pRem = latest["Perplexity 残り"], pCum = latest["Perplexity 累計使用"];
         if (pRem || pCum) {
-          var pSub = [];
-          if (pCum) pSub.push("累計 " + usd2(pCum.metric_value));
-          var pAt = (pRem || pCum).measured_at;
-          if (pAt) pSub.push("最終利用 " + fmtTime(pAt));
+          var pSt = usageStats("Perplexity");
+          var pCumV = pCum ? Number(pCum.metric_value) : 0;
+          if (pCumV - pSt.total > 0.00001) hasUnallocated = true;
           chips.push(creditChip("Perplexity",
-            pRem ? "残り " + usd2(pRem.metric_value) : "累計 " + usd2(pCum.metric_value),
-            pSub.join("｜"), !!(pRem && Number(pRem.metric_value) < 2)));
+            pRem ? "残り " + usd2(pRem.metric_value) : "累計 " + usd2(pCumV),
+            "今月 " + usdSub(pSt.month) + "｜累計 " + usdSub(pCumV),
+            !!(pRem && Number(pRem.metric_value) < 2)));
         }
         var gRem = latest["Gemini 残り"], gCum = latest["Gemini 累計使用"];
         if (gRem || gCum) {
-          var gSub = [];
-          if (gCum) gSub.push("累計 " + jpy0(gCum.metric_value));
-          var gAt = (gRem || gCum).measured_at;
-          if (gAt) gSub.push("最終利用 " + fmtTime(gAt));
+          var gSt = usageStats("Gemini");
+          var gCumV = gCum ? Number(gCum.metric_value) : 0;
+          if (gCumV - gSt.total > 0.5) hasUnallocated = true;
           chips.push(creditChip("Gemini",
-            gRem ? "残り " + jpy0(gRem.metric_value) : "累計 " + jpy0(gCum.metric_value),
-            gSub.join("｜"), false));
+            gRem ? "残り " + jpy0(gRem.metric_value) : "累計 " + jpy0(gCumV),
+            "今月 " + jpy0(gSt.month) + "｜累計 " + jpy0(gCumV),
+            false));
         }
         var oCum = latest["OpenAI 累計使用"];
-        chips.push(creditChip("OpenAI",
-          oCum ? "累計 " + usd2(oCum.metric_value) : "累計 記録なし",
-          oCum && oCum.measured_at ? "最終利用 " + fmtTime(oCum.measured_at) : "記録はこれから",
-          false));
+        if (oCum) {
+          var oSt = usageStats("OpenAI");
+          if (Number(oCum.metric_value) - oSt.total > 0.00001) hasUnallocated = true;
+          chips.push(creditChip("OpenAI",
+            "累計 " + usd2(oCum.metric_value),
+            "今月 " + usdSub(oSt.month), false));
+        } else {
+          chips.push(creditChip("OpenAI", "累計 記録なし", "記録はこれから", false));
+        }
         credSec.hidden = false;
         document.getElementById("credits").innerHTML = chips.join("");
+        var credNote = document.getElementById("credits-note");
+        if (credNote) {
+          credNote.hidden = !hasUnallocated;
+          credNote.textContent = hasUnallocated ? "※月別の内訳が無い過去分は「今月」に含みません" : "";
+        }
       } else {
         credSec.hidden = true;
       }
@@ -621,7 +653,7 @@
         if (r.measure_id !== ms.id) return;
         (byMetric[r.metric_name] = byMetric[r.metric_name] || []).push(r);
       });
-      var names = Object.keys(byMetric);
+      var names = Object.keys(byMetric).filter(function (n) { return !/使用イベント$/.test(n); });
       var lines = names.length ? names.map(function (name) {
         var arr = byMetric[name];
         var cur = arr[0];
