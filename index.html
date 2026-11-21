@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#080808">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=20261116-1700">
+<link rel="stylesheet" href="style.css?v=20261121-2130">
 </head>
 <body>
 <header>
@@ -25,25 +25,40 @@
       <p id="meta" class="meta">読み込み中…</p>
     </div>
 
+    <section id="approvals-section" hidden>
+      <h2>あなたの番 <span class="h2sub">判断・操作が要るものだけ</span></h2>
+      <div id="approvals" class="stack"></div>
+    </section>
+
     <section id="today-progress" hidden>
       <div class="bar"><i id="today-bar-fill"></i></div>
       <p class="progress-note" id="today-bar-note"></p>
     </section>
 
-    <section id="credits-section" hidden>
-      <h2>APIクレジット <span class="h2sub">残りは目安</span></h2>
-      <div id="credits" class="grid credits-grid"></div>
-      <p id="credits-note" class="sub" hidden></p>
-    </section>
-
-    <section id="approvals-section" hidden>
-      <h2>承認待ち</h2>
-      <div id="approvals" class="stack"></div>
-    </section>
-
     <section id="today-section">
       <h2>今日のタスク <span id="today-date" class="h2sub"></span></h2>
       <div id="today" class="stack"></div>
+    </section>
+
+    <section id="today-projects-section" hidden>
+      <h2>案件 <span class="h2sub">詳細は案件タブ</span></h2>
+      <div id="today-projects"></div>
+    </section>
+
+    <section id="today-numbers-section" hidden>
+      <h2>数字 <span class="h2sub">主要なものだけ・詳細は数字タブ</span></h2>
+      <div id="today-numbers" class="nums-grid"></div>
+    </section>
+
+    <section id="credits-section" hidden>
+      <h2>APIクレジット <span class="h2sub">残りは目安</span></h2>
+      <div id="credits"></div>
+      <p id="credits-note" class="sub" hidden></p>
+    </section>
+
+    <section id="today-reports-section" hidden>
+      <h2>報告履歴 <span class="h2sub">直近</span></h2>
+      <div id="today-reports"></div>
     </section>
   </div>
 
@@ -97,7 +112,7 @@
         <a class="btn lbtn" href="https://chatgpt.com/">GPT</a>
         <a class="btn lbtn" href="https://www.perplexity.ai/">Perplexity</a>
       </div>
-      <p class="sub">ver. 20261116-1630</p>
+      <p class="sub">ver. 20261121-2130</p>
     </section>
 
     <section>
@@ -128,6 +143,6 @@
 </nav>
 
 <script src="config.js?v=20261109-1745"></script>
-<script src="app.js?v=20261116-1700"></script>
+<script src="app.js?v=20261121-2130"></script>
 </body>
 </html>

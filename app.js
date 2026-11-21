@@ -256,14 +256,19 @@
         var pct = Math.round(doneCount / tasks.length * 100);
         tpSec.hidden = false;
         document.getElementById("today-bar-fill").style.width = pct + "%";
-        document.getElementById("today-bar-note").textContent = "今日のタスク " + doneCount + "/" + tasks.length + " 件完了 ・ " + pct + "%";
+        document.getElementById("today-bar-note").innerHTML = "今日のタスク <b>" + doneCount + " / " + tasks.length + "</b> 件完了 ・ " + pct + "%" +
+          (tasks.length - doneCount ? "（残り " + (tasks.length - doneCount) + " 件）" : "");
       } else {
         tpSec.hidden = true;
       }
     }
-    // 一覧には未完了だけを出す（完了分はバー側の件数にだけ数える）
+    // 一覧には未完了だけを出す（完了分はバー側の件数と末尾の1行要約にだけ数える）
     var visibleTasks = tasks.filter(function (t) { return !t.done; });
-    document.getElementById("today").innerHTML = visibleTasks.length ? visibleTasks.map(function (t) {
+    var doneTitles = tasks.filter(function (t) { return t.done; }).map(function (t) { return t.title; });
+    var doneLine = doneTitles.length
+      ? '<p class="done-line">完了した' + doneTitles.length + "件：" + doneTitles.map(esc).join("／") + "</p>"
+      : "";
+    var todayHtml = visibleTasks.length ? visibleTasks.map(function (t) {
       var canEdit = !useMock && !!getToken();
       var check = canEdit
         ? (t.done
@@ -292,6 +297,7 @@
         "</article>";
     }).join("")
       : (tasks.length ? '<p class="empty">今日のタスクは全件完了</p>' : '<p class="empty">今日のタスクはまだ登録なし</p>');
+    document.getElementById("today").innerHTML = todayHtml + doneLine;
 
     // APIクレジット（目安）— measures の「従量課金APIクレジット」の最新値から作る。
     // 残りは使用記録ベースの目安（残高を返す公式APIが無いため）。
@@ -329,46 +335,41 @@
           });
           return { month: month, total: total };
         };
-        var creditChip = function (label, mainText, subText, low) {
-          return '<article class="card credit' + (low ? " low" : "") + '"><div class="name">' +
-            esc(label) + (low ? ' <span class="status blocked">残りわずか</span>' : "") + "</div>" +
-            '<div class="creditnum">' + esc(mainText) + "</div>" +
-            (subText ? '<div class="sub">' + esc(subText) + "</div>" : "") + "</article>";
-        };
-        var chips = [];
+        // 今日タブでは1行にまとめる（今月・累計の内訳は数字タブの施策カードで見る）
+        var parts = [];
         var hasUnallocated = false;
         var pRem = latest["Perplexity 残り"], pCum = latest["Perplexity 累計使用"];
         if (pRem || pCum) {
           var pSt = usageStats("Perplexity");
           var pCumV = pCum ? Number(pCum.metric_value) : 0;
           if (pCumV - pSt.total > 0.00001) hasUnallocated = true;
-          chips.push(creditChip("Perplexity",
-            pRem ? "残り " + usd2(pRem.metric_value) : "累計 " + usd2(pCumV),
-            "今月 " + usdSub(pSt.month) + "｜累計 " + usdSub(pCumV),
-            !!(pRem && Number(pRem.metric_value) < 2)));
+          parts.push({
+            text: "Perplexity " + (pRem ? "残り " + usd2(pRem.metric_value) : "累計 " + usd2(pCumV)),
+            low: !!(pRem && Number(pRem.metric_value) < 2)
+          });
         }
         var gRem = latest["Gemini 残り"], gCum = latest["Gemini 累計使用"];
         if (gRem || gCum) {
           var gSt = usageStats("Gemini");
           var gCumV = gCum ? Number(gCum.metric_value) : 0;
           if (gCumV - gSt.total > 0.5) hasUnallocated = true;
-          chips.push(creditChip("Gemini",
-            gRem ? "残り " + jpy0(gRem.metric_value) : "累計 " + jpy0(gCumV),
-            "今月 " + jpy0(gSt.month) + "｜累計 " + jpy0(gCumV),
-            false));
+          parts.push({
+            text: "Gemini " + (gRem ? "残り " + jpy0(gRem.metric_value) : "累計 " + jpy0(gCumV)),
+            low: false
+          });
         }
         var oCum = latest["OpenAI 累計使用"];
         if (oCum) {
           var oSt = usageStats("OpenAI");
           if (Number(oCum.metric_value) - oSt.total > 0.00001) hasUnallocated = true;
-          chips.push(creditChip("OpenAI",
-            "累計 " + usd2(oCum.metric_value),
-            "今月 " + usdSub(oSt.month), false));
+          parts.push({ text: "OpenAI 累計 " + usd2(oCum.metric_value), low: false });
         } else {
-          chips.push(creditChip("OpenAI", "累計 記録なし", "記録はこれから", false));
+          parts.push({ text: "OpenAI 記録なし", low: false });
         }
         credSec.hidden = false;
-        document.getElementById("credits").innerHTML = chips.join("");
+        document.getElementById("credits").innerHTML = '<p class="credit-line">' + parts.map(function (pt) {
+          return pt.low ? '<span class="credit-low">' + esc(pt.text) + "（残りわずか）</span>" : esc(pt.text);
+        }).join(" ／ ") + "</p>";
         var credNote = document.getElementById("credits-note");
         if (credNote) {
           credNote.hidden = !hasUnallocated;
@@ -379,10 +380,12 @@
       }
     }
 
-    // 承認待ち
+    // あなたの番（承認待ち＋案件ごとの「あなたの番」）— 今日タブの先頭に大きなカードで出す。
+    // 出すのは承認待ちと、案件に具体的な指示（owner_action）が入っているものだけ。
     var apSec = document.getElementById("approvals-section");
     var ap = document.getElementById("approvals");
-    if (data.approvals.length) {
+    var ownerProjects = (data.projects || []).filter(function (p) { return p.owner_action; });
+    if (data.approvals.length || ownerProjects.length) {
       apSec.hidden = false;
       ap.innerHTML = data.approvals.map(function (a) {
         return '<article class="card approval"><div class="name">' + esc(a.title) + "</div>" +
@@ -392,6 +395,10 @@
           '<div class="appr-btns"><button class="btn appr-ok" data-id="' + a.id + '">承認する</button>' +
             '<button class="btn appr-ng" data-id="' + a.id + '">見送る</button></div>' +
           "</article>";
+      }).join("") + ownerProjects.map(function (p) {
+        return '<article class="card ownercard"><div class="name"><span class="dot ' + esc(p.status_color) + '"></span>' +
+          esc(p.name) + "</div>" +
+          '<p class="owner-how">' + esc(p.owner_action) + "</p></article>";
       }).join("");
       Array.prototype.forEach.call(ap.querySelectorAll(".appr-ok"), function (btn) {
         btn.addEventListener("click", function () {
@@ -452,7 +459,7 @@
 
     // 案件
     document.getElementById("projects").innerHTML = data.projects.map(function (p) {
-      return '<article class="card"><div class="name"><span class="dot ' + esc(p.status_color) + '"></span>' +
+      return '<article class="card pcard ' + esc(p.status_color) + '"><div class="name"><span class="dot ' + esc(p.status_color) + '"></span>' +
         esc(p.name) + "</div>" +
         '<div class="sub">' + esc(p.status_label) + "</div>" +
         (p.summary ? '<p class="line clampable">' + esc(p.summary) + "</p>" : "") +
@@ -461,6 +468,85 @@
         projectProgressHtml(p, data.work_items, data.done_items) +
         "</article>";
     }).join("") || '<p class="empty">案件の登録なし</p>';
+
+    // 今日タブ用：案件を1件1行で出す（状態の色帯＋案件名＋現状ひとこと＋次。詳細は案件タブ）
+    var tdProjSec = document.getElementById("today-projects-section");
+    if (tdProjSec) {
+      if (data.projects.length) {
+        tdProjSec.hidden = false;
+        document.getElementById("today-projects").innerHTML = data.projects.map(function (p) {
+          return '<div class="tprow ' + esc(p.status_color) + '"><span class="dot ' + esc(p.status_color) + '"></span>' +
+            '<div class="tprow-main"><div class="tprow-head"><span class="tprow-name">' + esc(p.name) + "</span>" +
+            '<span class="tprow-status">' + esc(p.status_label) + "</span></div>" +
+            (p.summary ? '<div class="tprow-now">' + esc(p.summary) + "</div>" : "") +
+            (p.next_action ? '<div class="tprow-next">次：' + esc(p.next_action) + "</div>" : "") +
+            "</div></div>";
+        }).join("");
+      } else {
+        tdProjSec.hidden = true;
+      }
+    }
+
+    // 今日タブ用：数字は主要なものだけ（クレジット系と使用イベントは除く。前回比があれば添える）
+    var tdNumSec = document.getElementById("today-numbers-section");
+    if (tdNumSec) {
+      var creditMeasureId = null;
+      (data.measures || []).forEach(function (m) {
+        if (m.title === "従量課金APIクレジット") creditMeasureId = m.id;
+      });
+      var tdByMetric = {};
+      (data.measure_results || []).forEach(function (r) {
+        if (r.measure_id === creditMeasureId) return;
+        if (/使用イベント$/.test(r.metric_name)) return;
+        (tdByMetric[r.metric_name] = tdByMetric[r.metric_name] || []).push(r);
+      });
+      var tdCands = Object.keys(tdByMetric).map(function (name) {
+        var arr = tdByMetric[name]; // measured_at の新しい順で取得済み
+        var cur = arr[0];
+        var delta = null;
+        if (arr.length > 1) {
+          var d = Number(cur.metric_value) - Number(arr[1].metric_value);
+          if (isFinite(d)) delta = d;
+        }
+        return { name: name, value: cur.metric_value, unit: cur.unit || "", at: cur.measured_at, delta: delta };
+      });
+      var TD_PREF = ["Instagram フォロワー", "Threads フォロワー", "YouTube 登録者", "YouTube 総再生", "GBP", "Facebook"];
+      var tdPicked = [];
+      TD_PREF.forEach(function (key) {
+        tdCands.forEach(function (c) {
+          if (tdPicked.length < 6 && c.name.indexOf(key) >= 0 && tdPicked.indexOf(c) < 0) tdPicked.push(c);
+        });
+      });
+      tdCands.slice().sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); })
+        .forEach(function (c) {
+          if (tdPicked.length < 6 && tdPicked.indexOf(c) < 0) tdPicked.push(c);
+        });
+      if (tdPicked.length) {
+        tdNumSec.hidden = false;
+        document.getElementById("today-numbers").innerHTML = tdPicked.map(function (c) {
+          var dHtml = (c.delta !== null && c.delta !== 0)
+            ? '<div class="tnum-sub">前回比 ' + (c.delta > 0 ? "+" : "") + fmtNum(c.delta) + "</div>" : "";
+          return '<div class="tnum"><div class="tnum-label">' + esc(c.name) + '</div>' +
+            '<div class="tnum-value">' + fmtNum(c.value) + '<span class="tnum-unit">' + esc(c.unit) + "</span></div>" + dHtml + "</div>";
+        }).join("");
+      } else {
+        tdNumSec.hidden = true;
+      }
+    }
+
+    // 今日タブ用：報告履歴の直近3件（全文は連携タブの報告履歴で見る）
+    var tdRepSec = document.getElementById("today-reports-section");
+    if (tdRepSec) {
+      if (data.reports && data.reports.length) {
+        tdRepSec.hidden = false;
+        document.getElementById("today-reports").innerHTML = data.reports.slice(0, 3).map(function (r) {
+          return '<div class="trep"><time>' + esc(fmtTime(r.created_at)) + "</time>" +
+            '<span class="trep-body">' + esc(r.body) + "</span></div>";
+        }).join("");
+      } else {
+        tdRepSec.hidden = true;
+      }
+    }
 
     // 作業（進行中＋完了済み。完了済みは末尾に置き、取り消しできる）
     var workCard = function (w, isDone) {
