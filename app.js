@@ -8,7 +8,7 @@
     cfg.supabaseUrl.indexOf("YOUR_") >= 0 || cfg.anonKey.indexOf("YOUR_") >= 0;
 
   // ---------------- 画面の自動更新（新しい版が出ていたら自動で読み直す） ----------------
-  var APP_VERSION = "20261123-2245";
+  var APP_VERSION = "20261123-2250";
   function checkVersion() {
     fetch("./index.html?nv=" + Date.now(), { cache: "no-store" }).then(function (res) {
       return res.text();
@@ -852,7 +852,7 @@
       if (data.media_channels.length) {
         tdAcctSec.hidden = false;
         var acCnt = document.getElementById("today-accounts-count");
-        if (acCnt) acCnt.textContent = data.media_channels.length + "件・1行ずつ";
+        if (acCnt) acCnt.textContent = data.media_channels.length + "件";
         var MEDIA_GENRE = {
           instagram: "店舗・集客", threads: "店舗・交流", facebook: "店舗ページ",
           x: "知識系・note導線", blog: "SEO・AIO", gbp: "店舗情報", note: "実録・有料記事",
