@@ -8,7 +8,7 @@
     cfg.supabaseUrl.indexOf("YOUR_") >= 0 || cfg.anonKey.indexOf("YOUR_") >= 0;
 
   // ---------------- 画面の自動更新（新しい版が出ていたら自動で読み直す） ----------------
-  var APP_VERSION = "20261123-2215";
+  var APP_VERSION = "20261123-2225";
   function checkVersion() {
     fetch("./index.html?nv=" + Date.now(), { cache: "no-store" }).then(function (res) {
       return res.text();
@@ -824,8 +824,21 @@
           return '<div class="crow"><span class="dot ' + st.key + '"></span>' +
             '<span class="cname">' + esc(p.name) + "</span>" +
             '<span class="cone">' + esc(one) + "</span>" +
-            '<span class="cst ' + st.key + '">' + st.label + "</span></div>";
+            '<span class="cst ' + st.key + '">' + st.label + "</span>" +
+            '<button class="cdetail" data-pjgo="' + esc(p.slug) + '">詳細</button></div>';
         }).join("");
+        // 詳細ボタン：案件タブの該当カードへ移動する（2026-11-23 わたるの指摘で復活）
+        Array.prototype.forEach.call(document.querySelectorAll("[data-pjgo]"), function (b) {
+          b.addEventListener("click", function () {
+            var slug = b.getAttribute("data-pjgo");
+            activateTab("projects");
+            try { history.replaceState(null, "", "#projects"); } catch (e) {}
+            setTimeout(function () {
+              var el = document.getElementById("pjcard-" + slug);
+              if (el) el.scrollIntoView({ block: "center" });
+            }, 60);
+          });
+        });
       } else {
         tdProjSec.hidden = true;
       }

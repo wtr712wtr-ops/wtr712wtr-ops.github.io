@@ -617,3 +617,6 @@ section.alertbox .card:first-child { border-top: none; }
 section.alertbox h2 { font-size: 13px; }
 .crow { font-size: 12.5px; padding: 5px 6px; }
 .empty-note { font-size: 12px; color: var(--sub); padding: 2px 0 8px; }
+
+/* 全案件の行の詳細ボタン（2026-11-23 復活） */
+.crow .cdetail { flex: none; font-size: 11px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--body); cursor: pointer; }
