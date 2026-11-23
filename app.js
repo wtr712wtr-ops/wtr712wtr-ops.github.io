@@ -8,7 +8,7 @@
     cfg.supabaseUrl.indexOf("YOUR_") >= 0 || cfg.anonKey.indexOf("YOUR_") >= 0;
 
   // ---------------- 画面の自動更新（新しい版が出ていたら自動で読み直す） ----------------
-  var APP_VERSION = "20261123-2340";
+  var APP_VERSION = "20261123-2350";
   function checkVersion() {
     fetch("./index.html?nv=" + Date.now(), { cache: "no-store" }).then(function (res) {
       return res.text();
@@ -784,6 +784,7 @@
         (p.next_action ? '<p class="line">次：' + esc(p.next_action) + "</p>" : "") +
         (p.owner_action ? '<p class="line warn">あなたの番：' + esc(p.owner_action) + "</p>" : "") +
         projectProgressHtml(p, data.work_items, data.done_items) +
+        (!useMock ? '<button class="btn pjdel-btn" data-pjdel="' + esc(p.id) + '" data-pjname="' + esc(p.name) + '">削除</button>' : "") +
         "</article>";
     }).join("") || '<p class="empty">案件の登録なし</p>';
 
@@ -830,6 +831,7 @@
             (works.length ? '<div class="pjd-works">' + works.map(function (w) {
               return '<div class="pjd-w"><span class="status ' + esc(w.status) + '">' + esc(STATUS_LABEL[w.status] || w.status) + "</span> " + esc(w.title) + "</div>";
             }).join("") + "</div>" : "") +
+            '<button class="btn pjdel-btn" data-pjdel="' + esc(p.id) + '" data-pjname="' + esc(p.name) + '">この案件を削除</button>' +
             "</div>";
           return '<div class="crow"><span class="dot ' + st.key + '"></span>' +
             '<span class="cname">' + esc(p.name) + "</span>" +
@@ -864,6 +866,29 @@
             }).catch(function (e) {
               b.disabled = false;
               showNotice("保存できませんでした。（" + e.message + "）", true);
+            });
+          });
+        });
+        // 案件の削除ボタン（案件カードと今日タブの詳細の両方に同じ属性で出す）
+        Array.prototype.forEach.call(document.querySelectorAll("[data-pjdel]"), function (b) {
+          b.addEventListener("click", function () {
+            var pid = b.getAttribute("data-pjdel");
+            var pname = b.getAttribute("data-pjname");
+            if (!pid) return;
+            if (!confirm("案件「" + pname + "」を削除しますか？\n紐づく作業・承認・指示も一緒に削除されます。元に戻せません。")) return;
+            ensureTokenAsync().then(function (ok) {
+              if (!ok) return;
+              b.disabled = true;
+              var q = "?project_id=eq." + encodeURIComponent(pid);
+              writeRest("DELETE", "work_items" + q, null)
+                .then(function () { return writeRest("DELETE", "approvals" + q, null); })
+                .then(function () { return writeRest("DELETE", "board_requests" + q, null); })
+                .then(function () { return writeRest("DELETE", "projects?id=eq." + encodeURIComponent(pid), null); })
+                .then(function () { showNotice("案件「" + pname + "」を削除しました"); reload(); })
+                .catch(function (e) {
+                  b.disabled = false;
+                  showNotice("削除できませんでした。（" + e.message + "）", true);
+                });
             });
           });
         });

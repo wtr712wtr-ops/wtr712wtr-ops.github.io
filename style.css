@@ -652,3 +652,13 @@ html, body { overflow-x: hidden; }
 #today-accounts .cmedia { flex: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis; }
 #today-accounts a.cacct, #today-accounts span.cacct { flex: 1; min-width: 0; }
 .pjd-w { overflow-wrap: anywhere; }
+
+/* 案件の削除ボタン（2026-11-23） */
+.pjdel-btn { border-color: rgba(229, 72, 77, 0.55); color: #ff9c9c; margin-top: 10px; }
+.pjdetail .pjdel-btn { margin-top: 8px; }
+
+/* 横ずれの追加対策（2026-11-23 23:46）：報告履歴の長いURLなどで本文がはみ出さないようにする */
+.trep, .trep-body { overflow-wrap: anywhere; }
+.line { overflow-wrap: anywhere; }
+#today-reports .trep { min-width: 0; }
+section { min-width: 0; }
