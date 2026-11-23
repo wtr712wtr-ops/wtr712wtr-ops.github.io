@@ -8,7 +8,7 @@
     cfg.supabaseUrl.indexOf("YOUR_") >= 0 || cfg.anonKey.indexOf("YOUR_") >= 0;
 
   // ---------------- 画面の自動更新（新しい版が出ていたら自動で読み直す） ----------------
-  var APP_VERSION = "20261123-2310";
+  var APP_VERSION = "20261123-2320";
   function checkVersion() {
     fetch("./index.html?nv=" + Date.now(), { cache: "no-store" }).then(function (res) {
       return res.text();
@@ -981,6 +981,9 @@
           ? '<button class="btn undo-btn" data-undo="' + esc(w.id) + '">完了を取り消す</button>'
           : '<button class="btn done-btn" data-done="' + esc(w.id) + '">完了にする</button>';
       }
+      if (!useMock && !isDone) {
+        btn += '<button class="btn cont-btn" data-cont="' + esc(w.id) + '" data-wtitle="' + esc(w.title) + '" data-pid="' + esc(w.project_id || "") + '">続ける</button>';
+      }
       return '<article class="card" id="wkcard-' + esc(w.id) + '"><div class="name">' + esc(w.title) + "</div>" +
         '<div class="sub">' + esc(where) + (when ? "｜" + esc(when) : "") + "</div>" +
         '<p class="line"><span class="status ' + esc(w.status) + '">' +
@@ -993,6 +996,25 @@
     var allCards = data.work_items.map(function (w) { return workCard(w, false); })
       .concat((data.done_items || []).map(function (w) { return workCard(w, true); }));
     document.getElementById("works").innerHTML = allCards.join("") || '<p class="empty">進行中の作業なし</p>';
+    Array.prototype.forEach.call(document.querySelectorAll("[data-cont]"), function (b) {
+      b.addEventListener("click", function () {
+        if (b.disabled) return;
+        b.disabled = true;
+        writeRest("POST", "board_requests", {
+          title: "続ける：" + b.getAttribute("data-wtitle"),
+          detail: "作業カードの「続ける」ボタンから登録された指示です。この作業を続けてください。",
+          requester: "wataru", assignee_ai: "muse",
+          project_id: b.getAttribute("data-pid") || null,
+          status: "requested", deliverable_url: ""
+        }).then(function () {
+          showNotice("登録しました：「" + b.getAttribute("data-wtitle") + "」Muse が拾って進めます");
+          b.textContent = "送りました";
+        }).catch(function (e) {
+          b.disabled = false;
+          showNotice("保存できませんでした。（" + e.message + "）", true);
+        });
+      });
+    });
 
     // 編集キー（右上の鍵アイコン）とタスク追加フォーム
     Array.prototype.forEach.call(document.querySelectorAll(".clampable"), function (el) {
