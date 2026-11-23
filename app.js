@@ -8,7 +8,7 @@
     cfg.supabaseUrl.indexOf("YOUR_") >= 0 || cfg.anonKey.indexOf("YOUR_") >= 0;
 
   // ---------------- 画面の自動更新（新しい版が出ていたら自動で読み直す） ----------------
-  var APP_VERSION = "20261123-2320";
+  var APP_VERSION = "20261123-2330";
   function checkVersion() {
     fetch("./index.html?nv=" + Date.now(), { cache: "no-store" }).then(function (res) {
       return res.text();
@@ -822,22 +822,49 @@
           } else {
             one = sm;
           }
+          var works = (data.work_items || []).filter(function (w) { return w.project_id === p.id; });
+          var detail = '<div class="pjdetail" id="pjdetail-' + esc(p.slug) + '" hidden>' +
+            '<p class="pjd-line"><span class="pjd-k">現状</span>' + esc(sm) + "</p>" +
+            (p.next_action ? '<p class="pjd-line"><span class="pjd-k">次</span>' + esc(p.next_action) + "</p>" : "") +
+            (p.owner_action ? '<p class="pjd-line"><span class="pjd-k">わたるの番</span>' + esc(p.owner_action) + "</p>" : "") +
+            (works.length ? '<div class="pjd-works">' + works.map(function (w) {
+              return '<div class="pjd-w"><span class="status ' + esc(w.status) + '">' + esc(STATUS_LABEL[w.status] || w.status) + "</span> " + esc(w.title) + "</div>";
+            }).join("") + "</div>" : "") +
+            "</div>";
           return '<div class="crow"><span class="dot ' + st.key + '"></span>' +
             '<span class="cname">' + esc(p.name) + "</span>" +
             '<span class="cone">' + esc(one) + "</span>" +
             '<span class="cst ' + st.key + '">' + st.label + "</span>" +
-            '<button class="cdetail" data-pjgo="' + esc(p.slug) + '">詳細</button></div>';
+            '<button class="cdetail ccont" data-pjcont="' + esc(p.id) + '" data-pjname="' + esc(p.name) + '">続ける</button>' +
+            '<button class="cdetail" data-pjdetail="' + esc(p.slug) + '">詳細</button></div>' + detail;
         }).join("");
-        // 詳細ボタン：案件タブの該当カードへ移動する（2026-11-23 わたるの指摘で復活）
-        Array.prototype.forEach.call(document.querySelectorAll("[data-pjgo]"), function (b) {
+        // 詳細ボタン：この画面のまま行の下へ広げて出す（2026-11-23 わたるの指示）
+        Array.prototype.forEach.call(document.querySelectorAll("[data-pjdetail]"), function (b) {
           b.addEventListener("click", function () {
-            var slug = b.getAttribute("data-pjgo");
-            activateTab("projects");
-            try { history.replaceState(null, "", "#projects"); } catch (e) {}
-            setTimeout(function () {
-              var el = document.getElementById("pjcard-" + slug);
-              if (el) el.scrollIntoView({ block: "center" });
-            }, 60);
+            var el = document.getElementById("pjdetail-" + b.getAttribute("data-pjdetail"));
+            if (!el) return;
+            el.hidden = !el.hidden;
+            b.textContent = el.hidden ? "詳細" : "閉じる";
+          });
+        });
+        // 続けるボタン：案件の継続指示を board_requests へ登録する
+        Array.prototype.forEach.call(document.querySelectorAll("[data-pjcont]"), function (b) {
+          b.addEventListener("click", function () {
+            if (b.disabled) return;
+            b.disabled = true;
+            writeRest("POST", "board_requests", {
+              title: "続ける：" + b.getAttribute("data-pjname"),
+              detail: "今日タブの全案件の「続ける」ボタンから登録された指示です。この案件を続けてください。",
+              requester: "wataru", assignee_ai: "muse",
+              project_id: b.getAttribute("data-pjcont") || null,
+              status: "requested", deliverable_url: ""
+            }).then(function () {
+              showNotice("登録しました：「" + b.getAttribute("data-pjname") + "」Muse が拾って進めます");
+              b.textContent = "送りました";
+            }).catch(function (e) {
+              b.disabled = false;
+              showNotice("保存できませんでした。（" + e.message + "）", true);
+            });
           });
         });
       } else {
