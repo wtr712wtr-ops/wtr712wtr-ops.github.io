@@ -472,3 +472,48 @@ span.tcheck2 { cursor: default; }
 .pcard.yellow { border-left-color: var(--yellow); }
 .pcard.red { border-left-color: var(--red); }
 .pcard.blue { border-left-color: var(--blue); }
+
+/* ===== 要対応＋全件圧縮型（2026-11-23、モックCの本番実装） ===== */
+/* 詰まり帯（今日タブ上部） */
+#stalls {
+  background: rgba(229, 72, 77, 0.08);
+  border: 1px solid rgba(229, 72, 77, 0.5);
+  border-radius: 14px;
+  padding: 6px 14px;
+}
+.stallitem { padding: 9px 0; border-top: 1px dashed rgba(255, 255, 255, 0.14); }
+.stallitem:first-child { border-top: none; }
+.stallitem .pj { font-weight: 700; font-size: 14px; }
+.stallitem .act { font-size: 14px; color: var(--body); overflow-wrap: anywhere; }
+.stallitem .why {
+  color: var(--sub); font-size: 12.5px; line-height: 1.55; margin-top: 1px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+/* 全案件・全アカウントの圧縮リスト（1行ずつ） */
+.dot.ban { background: #ff7847; }
+.dot.tumi { background: var(--red); }
+.dot.shin { background: var(--yellow); }
+.dot.machi { background: var(--gray); }
+.crow {
+  display: flex; gap: 7px; align-items: baseline;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.crow .dot { flex: none; position: relative; top: 1px; margin-right: 0; }
+.crow .cname { font-weight: 700; white-space: nowrap; }
+.crow .cone {
+  color: var(--sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1; min-width: 0;
+}
+.crow .cst { margin-left: auto; flex: none; font-size: 12px; font-weight: 600; color: var(--sub); }
+.crow .cst.ban { color: #ff9d6b; }
+.crow .cst.tumi { color: #ff8589; }
+.crow .cst.shin { color: #ffcf4d; }
+.crow .cst.machi { color: var(--sub); }
+.crow .cmedia { color: var(--body); white-space: nowrap; font-weight: 600; }
+.crow a.cacct { color: #8fd0ff; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crow span.cacct { color: var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cgrp { font-size: 12px; color: var(--yellow); font-weight: 700; padding: 12px 4px 2px; }

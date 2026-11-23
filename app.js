@@ -426,6 +426,47 @@
       apprBadge.style.display = data.approvals.length ? "" : "none";
     });
 
+    // 詰まり帯（今日タブ上部）— 判定は既存の詰まり検知（ops_watch）と同じ定義で、取得済みデータから引く。
+    // 案件単位：summary 先頭の【止まり検知】マーカー（ops_watch が付けたもの）。
+    // 作業単位：blocked／期限超過／進行中のまま48時間以上更新なし、の3条件（1作業は1件だけ数える）。
+    var stallSec = document.getElementById("stalls-section");
+    if (stallSec) {
+      var nowMs = Date.now();
+      var stallItems = [];
+      (data.projects || []).forEach(function (p) {
+        var sm = p.summary || "";
+        if (sm.indexOf("【止まり検知】") !== 0) return;
+        var dm = sm.match(/最終更新：(\d+)年(\d+)月(\d+)日/);
+        var dateTxt = dm ? "（最終更新 " + Number(dm[2]) + "/" + Number(dm[3]) + "）" : "";
+        var restSm = sm.replace(/^【止まり検知】動きが止まっています（最終更新：[^）]+）。/, "");
+        stallItems.push({ rank: 0, pj: p.name, act: "止まり検知" + dateTxt, why: restSm });
+      });
+      (data.work_items || []).forEach(function (w) {
+        var where = (w.project && w.project.name) || (w.media && w.media.name) || "";
+        if (w.status === "blocked") {
+          stallItems.push({ rank: 1, pj: where, act: w.title, why: w.blocked_reason || "止まっています" });
+        } else if (w.due_at && new Date(w.due_at).getTime() < nowMs) {
+          stallItems.push({ rank: 2, pj: where, act: w.title, why: "期限 " + fmtTime(w.due_at) + " を過ぎています" });
+        } else if (w.status === "in_progress" && w.updated_at &&
+                   new Date(w.updated_at).getTime() < nowMs - 48 * 3600 * 1000) {
+          stallItems.push({ rank: 3, pj: where, act: w.title, why: "進行中のまま48時間以上更新がありません（最終更新 " + fmtTime(w.updated_at) + "）" });
+        }
+      });
+      stallItems.sort(function (a, b) { return a.rank - b.rank; });
+      if (stallItems.length) {
+        stallSec.hidden = false;
+        document.getElementById("stalls").innerHTML = stallItems.map(function (it) {
+          return '<div class="stallitem">' +
+            (it.pj ? '<span class="pj">' + esc(it.pj) + "：</span>" : "") +
+            '<span class="act">' + esc(it.act) + "</span>" +
+            (it.why ? '<div class="why">' + esc(it.why) + "</div>" : "") +
+            "</div>";
+        }).join("");
+      } else {
+        stallSec.hidden = true;
+      }
+    }
+
     // 媒体カード（媒体ごとの直近の作業と進捗）。カードを押すと各媒体へ飛ぶ
     var MEDIA_LINKS = {
       instagram: "https://www.instagram.com/thegym_fit/",
@@ -478,21 +519,90 @@
         "</article>";
     }).join("") || '<p class="empty">案件の登録なし</p>';
 
-    // 今日タブ用：案件を1件1行で出す（状態の色帯＋案件名＋現状ひとこと＋次。詳細は案件タブ）
+    // 今日タブ用：全案件を1行ずつ圧縮して出す（自分の番・詰まりを上に寄せる。詳細は案件タブ）
+    // 状態の判定は既存の項目だけから引く：自分の番＝owner_action があるか承認待ちが紐づくもの、
+    // 詰まり＝止まり検知マーカーがあるか blocked の作業があるもの、進行中＝進行中の作業があるか状態色が緑・黄・青のもの。
     var tdProjSec = document.getElementById("today-projects-section");
     if (tdProjSec) {
       if (data.projects.length) {
         tdProjSec.hidden = false;
-        document.getElementById("today-projects").innerHTML = data.projects.map(function (p) {
-          return '<div class="tprow ' + esc(p.status_color) + '"><span class="dot ' + esc(p.status_color) + '"></span>' +
-            '<div class="tprow-main"><div class="tprow-head"><span class="tprow-name">' + esc(p.name) + "</span>" +
-            '<span class="tprow-status">' + esc(p.status_label) + "</span></div>" +
-            (p.summary ? '<div class="tprow-now">' + esc(p.summary) + "</div>" : "") +
-            (p.next_action ? '<div class="tprow-next">次：' + esc(p.next_action) + "</div>" : "") +
-            "</div></div>";
+        var pjState = function (p) {
+          var works = (data.work_items || []).filter(function (w) { return w.project_id === p.id; });
+          var ban = !!p.owner_action || (data.approvals || []).some(function (a) { return a.project_id === p.id; });
+          var tumi = (p.summary || "").indexOf("【止まり検知】") === 0 ||
+            works.some(function (w) { return w.status === "blocked"; });
+          var active = works.some(function (w) { return w.status === "in_progress"; }) ||
+            p.status_color === "green" || p.status_color === "yellow" || p.status_color === "blue";
+          if (ban) return { rank: 0, key: "ban", label: "自分の番" };
+          if (tumi) return { rank: 1, key: "tumi", label: "詰まり" };
+          if (active) return { rank: 2, key: "shin", label: "進行中" };
+          return { rank: 3, key: "machi", label: "待ち" };
+        };
+        var sortedProjects = data.projects.slice().sort(function (a, b) {
+          var d = pjState(a).rank - pjState(b).rank;
+          return d !== 0 ? d : (a.sort_order || 0) - (b.sort_order || 0);
+        });
+        document.getElementById("today-projects").innerHTML = sortedProjects.map(function (p) {
+          var st = pjState(p);
+          var sm = p.summary || "";
+          var one;
+          if (sm.indexOf("【止まり検知】") === 0) {
+            var dm = sm.match(/最終更新：(\d+)年(\d+)月(\d+)日/);
+            one = "止まり検知" + (dm ? "（最終更新 " + Number(dm[2]) + "/" + Number(dm[3]) + "）" : "");
+          } else {
+            one = sm;
+          }
+          return '<div class="crow"><span class="dot ' + st.key + '"></span>' +
+            '<span class="cname">' + esc(p.name) + "</span>" +
+            '<span class="cone">' + esc(one) + "</span>" +
+            '<span class="cst ' + st.key + '">' + st.label + "</span></div>";
         }).join("");
       } else {
         tdProjSec.hidden = true;
+      }
+    }
+
+    // 今日タブ用：全アカウントを1行ずつ圧縮して出す（系統ごとにまとめ、アカウント名から各媒体へ飛べる）
+    // 状態は紐づく作業から引く：blocked があれば詰まり、進行中があれば進行中、未完了の作業があれば運用中、無ければ作業なし。
+    var tdAcctSec = document.getElementById("today-accounts-section");
+    if (tdAcctSec) {
+      if (data.media_channels.length) {
+        tdAcctSec.hidden = false;
+        var acctGroup = function (m) {
+          if (m.slug === "line_stamps" || m.slug === "booth") return "販売（スタンプ・BOOTH）";
+          if (m.slug.indexOf("youtube") === 0 || m.slug === "instagram_parallel" || m.slug === "tiktok") return "Parallel Japan（動画）";
+          return "THE GYM";
+        };
+        var acctState = function (m) {
+          var works = (data.work_items || []).filter(function (w) { return w.media_id === m.id; });
+          if (works.some(function (w) { return w.status === "blocked"; })) return { key: "tumi", label: "詰まり" };
+          if (works.some(function (w) { return w.status === "in_progress"; })) return { key: "shin", label: "進行中" };
+          if (works.length) return { key: "shin", label: "運用中" };
+          return { key: "machi", label: "作業なし" };
+        };
+        var groupOrder = ["THE GYM", "Parallel Japan（動画）", "販売（スタンプ・BOOTH）"];
+        var groups = {};
+        data.media_channels.forEach(function (m) {
+          var g = acctGroup(m);
+          if (groupOrder.indexOf(g) < 0) groupOrder.push(g);
+          (groups[g] = groups[g] || []).push(m);
+        });
+        document.getElementById("today-accounts").innerHTML = groupOrder.filter(function (g) {
+          return groups[g] && groups[g].length;
+        }).map(function (g) {
+          return '<p class="cgrp">' + esc(g) + "</p>" + groups[g].map(function (m) {
+            var st = acctState(m);
+            var url = MEDIA_LINKS[m.slug];
+            var acct = url
+              ? '<a class="cacct" href="' + url + '" target="_blank" rel="noopener">' + esc(m.account_label) + "</a>"
+              : '<span class="cacct">' + esc(m.account_label) + "</span>";
+            return '<div class="crow"><span class="cmedia">' + esc(m.name) + "</span>" +
+              acct +
+              '<span class="cst ' + st.key + '">' + st.label + "</span></div>";
+          }).join("");
+        }).join("");
+      } else {
+        tdAcctSec.hidden = true;
       }
     }
 
