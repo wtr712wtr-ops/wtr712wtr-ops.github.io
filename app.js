@@ -7,6 +7,22 @@
   var useMock = cfg.forceMock || !cfg.supabaseUrl || !cfg.anonKey ||
     cfg.supabaseUrl.indexOf("YOUR_") >= 0 || cfg.anonKey.indexOf("YOUR_") >= 0;
 
+  // ---------------- 画面の自動更新（新しい版が出ていたら自動で読み直す） ----------------
+  var APP_VERSION = "20261123-1715";
+  function checkVersion() {
+    fetch("./index.html?nv=" + Date.now(), { cache: "no-store" }).then(function (res) {
+      return res.text();
+    }).then(function (text) {
+      var m = text.match(/app\.js\?v=([0-9-]+)/);
+      if (m && m[1] !== APP_VERSION) location.reload();
+    }).catch(function () {});
+  }
+  setTimeout(checkVersion, 5000);
+  setInterval(checkVersion, 10 * 60 * 1000);
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) checkVersion();
+  });
+
   // ---------------- モックデータ（REST の返却形に合わせた形） ----------------
   var MOCK = {
     projects: [
@@ -477,6 +493,24 @@
     if (stallSec) {
       var nowMs = Date.now();
       var stallItems = [];
+      // 押した行の完了表示を保持する印（localStorage）。項目の状態（stamp）が変わるか、
+      // 一覧から消えたら印は外れる（次回描画でボタンが戻る）。
+      var STALL_ACTED_KEY = "tower_stall_acted";
+      var loadStallActed = function () {
+        try {
+          var v = JSON.parse(localStorage.getItem(STALL_ACTED_KEY) || "{}");
+          return v && typeof v === "object" ? v : {};
+        } catch (e) { return {}; }
+      };
+      var stallActed = loadStallActed();
+      var saveStallActed = function () {
+        try { localStorage.setItem(STALL_ACTED_KEY, JSON.stringify(stallActed)); } catch (e) {}
+      };
+      var markStallActed = function (it, msg) {
+        if (!it || !it.skey) return;
+        stallActed[it.skey] = { stamp: it.stamp, msg: msg };
+        saveStallActed();
+      };
       (data.projects || []).forEach(function (p) {
         var sm = p.summary || "";
         if (sm.indexOf("【止まり検知】") !== 0) return;
@@ -488,6 +522,7 @@
           rank: 0, kind: waitP ? "wait" : "project",
           kindLabel: waitP ? "わたる待ち" : "案件の止まり",
           pj: p.name, pjId: p.id, pjSlug: p.slug, workId: null,
+          skey: "pj:" + p.id, stamp: p.updated_at || sm,
           act: "止まり検知" + dateTxt,
           why: waitP && p.next_action ? p.next_action : restSm,
           nextAction: p.next_action || ""
@@ -500,6 +535,8 @@
           pj: where, pjId: w.project_id || null,
           pjSlug: (w.project && w.project.slug) || null,
           workId: w.id, act: w.title, nextAction: "",
+          skey: String(w.id),
+          stamp: (w.updated_at || "") + "|" + w.status + "|" + (w.due_at || ""),
           kind: waitW ? "wait" : "work"
         };
         if (w.status === "blocked") {
@@ -521,11 +558,27 @@
         }
       });
       stallItems.sort(function (a, b) { return a.rank - b.rank; });
+      // 今の一覧に無い項目・状態（stamp）が変わった項目の印は外して保存し直す
+      var actedChanged = false;
+      Object.keys(stallActed).forEach(function (k) {
+        var cur = null;
+        stallItems.forEach(function (it) { if (it.skey === k) cur = it; });
+        if (!cur || !stallActed[k] || stallActed[k].stamp !== cur.stamp) {
+          delete stallActed[k];
+          actedChanged = true;
+        }
+      });
+      if (actedChanged) saveStallActed();
       if (stallItems.length) {
         stallSec.hidden = false;
         document.getElementById("stalls").innerHTML = stallItems.map(function (it, idx) {
+          var acted = stallActed[it.skey];
+          var isActed = !!(acted && acted.stamp === it.stamp);
           var btns;
-          if (it.kind === "wait") {
+          if (isActed) {
+            btns = '<span class="sdone">✓ ' +
+              esc(acted.msg === "終わりにしました" ? "終わりにしました" : "登録済み（Museが対応中）") + "</span>";
+          } else if (it.kind === "wait") {
             btns = '<button class="sbtn pri" data-sact="ok" data-idx="' + idx + '">進めてよい</button>' +
               '<button class="sbtn dng" data-sact="ng" data-idx="' + idx + '">見送る</button>' +
               '<button class="sbtn" data-sact="write" data-idx="' + idx + '">判断を書く</button>';
@@ -537,7 +590,7 @@
             btns = '<button class="sbtn restart" data-sact="restart" data-idx="' + idx + '">再開させる</button>' +
               '<button class="sbtn" data-sact="write" data-idx="' + idx + '">指示を書く</button>';
           }
-          btns += '<button class="sbtn detail" data-sact="detail" data-idx="' + idx + '">詳細 ›</button>';
+          if (!isActed) btns += '<button class="sbtn detail" data-sact="detail" data-idx="' + idx + '">詳細 ›</button>';
           var ph = it.kind === "wait" ? "判断を短く書く（例：その内容で進めてよい）" : "Museへの指示を短く書く";
           return '<div class="stallitem">' +
             '<span class="kind' + (it.kind === "wait" ? " wait" : "") + '">' + esc(it.kindLabel) + "</span>" +
@@ -545,13 +598,14 @@
             '<span class="act">' + esc(it.act) + "</span>" +
             (it.why ? '<div class="why">' + esc(it.why) + "</div>" : "") +
             '<div class="sbtns">' + btns + "</div>" +
-            '<div class="sinp"><input type="text" data-sinp="' + idx + '" placeholder="' + ph + '" autocomplete="off">' +
-            '<button class="sbtn pri" data-sact="send" data-idx="' + idx + '">送る</button></div>' +
+            (isActed ? "" :
+              '<div class="sinp"><input type="text" data-sinp="' + idx + '" placeholder="' + ph + '" autocomplete="off">' +
+              '<button class="sbtn pri" data-sact="send" data-idx="' + idx + '">送る</button></div>') +
             "</div>";
         }).join("");
         // 詰まり行のボタンの処理。ボタンは常時表示し、編集キーが無ければ押した時点で入力を求める（ensureTokenAsync）。
-        // 成功したら行に完了表示を出し、上部にも通知を出す。再読み込みは少し遅らせて、完了表示が十分見えるようにする
-        // （登録しても詰まり一覧自体は変わらないため、即時再読み込みだけだと無反応に見える。2026年11月23日修正）。
+        // 成功したら行に完了表示を出し、上部にも通知を出す。完了表示は印（tower_stall_acted）で保持し、
+        // 再描画されても項目の状態が変わるまではボタンを戻さない（2026年11月23日修正）。
         var stallTarget = function (it) {
           if (it.workId) return "作業「" + it.act + "」" + (it.pj ? "（案件：" + it.pj + "）" : "");
           return "案件「" + it.pj + "」";
@@ -586,9 +640,9 @@
               assignee_ai: "muse", project_id: it.pjId || null,
               status: "requested", deliverable_url: ""
             }).then(function () {
+              markStallActed(it, "登録しました");
               stallDone(row, "登録しました");
               showNotice("登録しました：「" + title + "」Muse が拾って進めます");
-              setTimeout(reload, 3000);
             }).catch(function (e) { stallFailed(row, e); });
           });
         };
@@ -636,9 +690,9 @@
                 setStallBusy(row, true);
                 writeRest("PATCH", "work_items?id=eq." + encodeURIComponent(it.workId), { status: "cancelled" })
                   .then(function () {
+                    markStallActed(it, "終わりにしました");
                     stallDone(row, "終わりにしました");
                     showNotice("作業を終わりにしました：「" + it.act + "」");
-                    setTimeout(reload, 3000);
                   })
                   .catch(function (e) { stallFailed(row, e); });
               });
