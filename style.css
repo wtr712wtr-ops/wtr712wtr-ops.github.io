@@ -558,3 +558,40 @@ span.tcheck2 { cursor: default; }
   color: var(--text);
 }
 .sinp .sbtn { flex: none; }
+
+/* ===== 書き込み結果の見える化と編集キーの画面内入力（2026-11-23修正） ===== */
+/* 今日タブ上部の結果表示。再読み込み後も残る */
+.notice {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px; font-weight: 600; line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.notice.ok { background: rgba(29, 185, 84, 0.16); border: 1px solid rgba(29, 185, 84, 0.55); color: #a9e8c0; }
+.notice.err { background: rgba(229, 72, 77, 0.14); border: 1px solid rgba(229, 72, 77, 0.6); color: #ffb3b3; }
+/* 詰まり行の完了表示と送信中の無効化 */
+.sdone { font-size: 13.5px; font-weight: 700; color: #a9e8c0; padding: 9px 2px; display: inline-block; }
+.sbtn:disabled { opacity: 0.45; cursor: default; }
+.sinp input:disabled { opacity: 0.5; }
+/* 編集キー入力モーダル */
+#keymodal { position: fixed; inset: 0; z-index: 100; }
+#keymodal[hidden] { display: none; }
+.km-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.65); }
+.km-box {
+  position: absolute; left: 50%; top: 22%; transform: translateX(-50%);
+  width: min(92vw, 380px);
+  background: #1b1b1b; border: 1px solid var(--line); border-radius: 14px;
+  padding: 18px; box-shadow: var(--shadow-hover);
+}
+.km-title { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+.km-note { font-size: 13px; color: var(--sub); margin: 0 0 12px; }
+.km-box input {
+  width: 100%;
+  font: inherit; font-size: 15px;
+  padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: #111; color: var(--text);
+}
+.km-btns { display: flex; gap: 8px; margin-top: 14px; }
+.km-btns .btn { flex: 1; margin-top: 0; margin-left: 0; }

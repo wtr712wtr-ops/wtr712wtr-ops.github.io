@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#080808">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=20261123-1513">
+<link rel="stylesheet" href="style.css?v=20261123-1524">
 </head>
 <body>
 <header>
@@ -24,6 +24,8 @@
       <h2 class="ptitle">今日</h2>
       <p id="meta" class="meta">読み込み中…</p>
     </div>
+
+    <div id="notice" class="notice ok" hidden></div>
 
     <section id="approvals-section" hidden>
       <h2>あなたの番 <span class="h2sub">判断・操作が要るものだけ</span></h2>
@@ -122,7 +124,7 @@
         <a class="btn lbtn" href="https://chatgpt.com/">GPT</a>
         <a class="btn lbtn" href="https://www.perplexity.ai/">Perplexity</a>
       </div>
-      <p class="sub">ver. 20261123-1513</p>
+      <p class="sub">ver. 20261123-1524</p>
     </section>
 
     <section>
@@ -152,7 +154,20 @@
   <button class="tab" data-tab="board"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 6 .4l3-3a4 4 0 0 0-5.6-5.6l-1.7 1.7"/><path d="M14 10a4 4 0 0 0-6-.4l-3 3a4 4 0 0 0 5.6 5.6l1.7-1.7"/></svg><span class="tlabel">連携</span></button>
 </nav>
 
+<div id="keymodal" hidden>
+  <div class="km-backdrop"></div>
+  <div class="km-box" role="dialog" aria-modal="true" aria-labelledby="keymodal-title">
+    <p class="km-title" id="keymodal-title">編集キーを入力してください</p>
+    <p class="km-note">この端末にだけ保存されます</p>
+    <input type="text" id="keymodal-input" autocomplete="off" placeholder="編集キー">
+    <div class="km-btns">
+      <button type="button" class="btn" id="keymodal-cancel">やめる</button>
+      <button type="button" class="btn appr-ok" id="keymodal-ok">保存して続ける</button>
+    </div>
+  </div>
+</div>
+
 <script src="config.js?v=20261109-1745"></script>
-<script src="app.js?v=20261123-1513"></script>
+<script src="app.js?v=20261123-1524"></script>
 </body>
 </html>

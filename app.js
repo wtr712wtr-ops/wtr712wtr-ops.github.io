@@ -117,11 +117,34 @@
     } catch (e) { /* 保存できない環境では編集不可のまま */ }
   }
   // ボタンは常時表示し、押した時点でキーが無ければその場で入力を求める（2026年11月5日変更）。
-  function ensureToken() {
-    if (getToken()) return true;
-    var t = prompt("編集キーを入力してください（この端末にだけ保存されます）");
-    if (t) { setToken(t.trim()); return true; }
-    return false;
+  // キーの入力は window.prompt ではなく画面内の入力欄（#keymodal）で行う（2026年11月23日変更）。
+  // prompt が出ない表示環境（アプリ内表示など）でも入力して先へ進めるようにするため。
+  var keyModalResolve = null;
+  function openKeyModal() {
+    return new Promise(function (resolve) {
+      var m = document.getElementById("keymodal");
+      var inp = document.getElementById("keymodal-input");
+      if (!m || !inp) { resolve(null); return; }
+      // 前の呼び出しが残っていたら先に打ち切る（多重バインド時のハング防止）
+      if (keyModalResolve) { var prev = keyModalResolve; keyModalResolve = null; prev(null); }
+      keyModalResolve = resolve;
+      inp.value = "";
+      m.hidden = false;
+      setTimeout(function () { try { inp.focus(); } catch (e) {} }, 30);
+    });
+  }
+  function closeKeyModal(val) {
+    var m = document.getElementById("keymodal");
+    if (m) m.hidden = true;
+    if (keyModalResolve) { var r = keyModalResolve; keyModalResolve = null; r(val); }
+  }
+  // キーがあれば即 true、無ければ画面内入力を求め、入力されたら保存して true を返す（Promise）。
+  function ensureTokenAsync() {
+    if (getToken()) return Promise.resolve(true);
+    return openKeyModal().then(function (t) {
+      if (t) { setToken(t); return true; }
+      return false;
+    });
   }
   function writeRest(method, path, payload) {
     return fetch(cfg.supabaseUrl.replace(/\/$/, "") + "/rest/v1/" + path, {
@@ -146,6 +169,18 @@
   }
   function writeFailed(e) {
     alert("保存できませんでした。編集キーが違うか、通信に失敗しました。（" + e.message + "）");
+  }
+  // 書き込みの結果を今日タブ上部の #notice に出す。#notice は render の再描画対象外なので、
+  // 再読み込み（reload）の後も残り、結果が後からでも分かる（2026年11月23日追加）。
+  var noticeTimer = null;
+  function showNotice(msg, isError) {
+    var n = document.getElementById("notice");
+    if (!n) return;
+    n.textContent = msg;
+    n.className = isError ? "notice err" : "notice ok";
+    n.hidden = false;
+    if (noticeTimer) clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(function () { n.hidden = true; }, 9000);
   }
 
   function todayJst() {
@@ -403,19 +438,23 @@
       Array.prototype.forEach.call(ap.querySelectorAll(".appr-ok"), function (btn) {
         btn.addEventListener("click", function () {
           if (!confirm("この内容で承認しますか？")) return;
-          if (!ensureToken()) return;
-          writeRest("PATCH", "approvals?id=eq." + btn.getAttribute("data-id"), { status: "approved" })
-            .then(function () { reload(); })
-            .catch(function () { alert("承認の記録に失敗しました。通信状態を確認してください。"); });
+          ensureTokenAsync().then(function (ok) {
+            if (!ok) return;
+            writeRest("PATCH", "approvals?id=eq." + btn.getAttribute("data-id"), { status: "approved" })
+              .then(function () { showNotice("承認を記録しました"); reload(); })
+              .catch(function () { alert("承認の記録に失敗しました。通信状態を確認してください。"); });
+          });
         });
       });
       Array.prototype.forEach.call(ap.querySelectorAll(".appr-ng"), function (btn) {
         btn.addEventListener("click", function () {
           if (!confirm("この内容を見送りますか？")) return;
-          if (!ensureToken()) return;
-          writeRest("PATCH", "approvals?id=eq." + btn.getAttribute("data-id"), { status: "rejected" })
-            .then(function () { reload(); })
-            .catch(function () { alert("記録に失敗しました。通信状態を確認してください。"); });
+          ensureTokenAsync().then(function (ok) {
+            if (!ok) return;
+            writeRest("PATCH", "approvals?id=eq." + btn.getAttribute("data-id"), { status: "rejected" })
+              .then(function () { showNotice("見送りを記録しました"); reload(); })
+              .catch(function () { alert("記録に失敗しました。通信状態を確認してください。"); });
+          });
         });
       });
     } else {
@@ -510,28 +549,56 @@
             '<button class="sbtn pri" data-sact="send" data-idx="' + idx + '">送る</button></div>' +
             "</div>";
         }).join("");
-        // 詰まり行のボタンの処理。ボタンは常時表示し、編集キーが無ければ押した時点で入力を求める（ensureToken）。
+        // 詰まり行のボタンの処理。ボタンは常時表示し、編集キーが無ければ押した時点で入力を求める（ensureTokenAsync）。
+        // 成功したら行に完了表示を出し、上部にも通知を出す。再読み込みは少し遅らせて、完了表示が十分見えるようにする
+        // （登録しても詰まり一覧自体は変わらないため、即時再読み込みだけだと無反応に見える。2026年11月23日修正）。
         var stallTarget = function (it) {
           if (it.workId) return "作業「" + it.act + "」" + (it.pj ? "（案件：" + it.pj + "）" : "");
           return "案件「" + it.pj + "」";
         };
         var stallShort = function (it) { return it.workId ? it.act : it.pj; };
         var stallLabel = function (it) { return it.workId ? it.act : it.pj + "の件"; };
-        var postStallRequest = function (it, title, detail) {
-          if (!ensureToken()) return;
-          writeRest("POST", "board_requests", {
-            title: title, detail: detail, requester: "wataru",
-            assignee_ai: "muse", project_id: it.pjId || null,
-            status: "requested", deliverable_url: ""
-          }).then(reload).catch(writeFailed);
+        // 送信中はその行のボタンと入力欄を無効化して二重押しを防ぐ
+        var setStallBusy = function (row, busy) {
+          if (!row) return;
+          Array.prototype.forEach.call(row.querySelectorAll("button"), function (b) { b.disabled = busy; });
+          var inp = row.querySelector("input[data-sinp]");
+          if (inp) inp.disabled = busy;
+        };
+        // 成功時：ボタンの並びを完了表示に差し替え、入力欄を閉じる
+        var stallDone = function (row, msg) {
+          if (!row) return;
+          var btns = row.querySelector(".sbtns");
+          if (btns) btns.innerHTML = '<span class="sdone">✓ ' + esc(msg) + "</span>";
+          var sinp = row.querySelector(".sinp");
+          if (sinp) sinp.classList.remove("open");
+        };
+        var stallFailed = function (row, e) {
+          setStallBusy(row, false);
+          showNotice("保存できませんでした。編集キーが違うか、通信に失敗しました。（" + e.message + "）", true);
+        };
+        var postStallRequest = function (it, title, detail, row) {
+          ensureTokenAsync().then(function (ok) {
+            if (!ok) return;
+            setStallBusy(row, true);
+            writeRest("POST", "board_requests", {
+              title: title, detail: detail, requester: "wataru",
+              assignee_ai: "muse", project_id: it.pjId || null,
+              status: "requested", deliverable_url: ""
+            }).then(function () {
+              stallDone(row, "登録しました");
+              showNotice("登録しました：「" + title + "」Muse が拾って進めます");
+              setTimeout(reload, 3000);
+            }).catch(function (e) { stallFailed(row, e); });
+          });
         };
         Array.prototype.forEach.call(document.querySelectorAll("#stalls [data-sact]"), function (btn) {
           btn.addEventListener("click", function () {
             var it = stallItems[Number(btn.getAttribute("data-idx"))];
             if (!it) return;
             var act = btn.getAttribute("data-sact");
+            var row = btn.closest(".stallitem");
             if (act === "write") {
-              var row = btn.closest(".stallitem");
               var inp = row ? row.querySelector(".sinp") : null;
               if (inp) {
                 inp.classList.toggle("open");
@@ -539,16 +606,15 @@
                 if (inp.classList.contains("open") && f) f.focus();
               }
             } else if (act === "send") {
-              var row2 = btn.closest(".stallitem");
-              var f2 = row2 ? row2.querySelector("input[data-sinp]") : null;
+              var f2 = row ? row.querySelector("input[data-sinp]") : null;
               var text = f2 ? f2.value.trim() : "";
               if (!text) { if (f2) f2.focus(); return; }
               if (it.kind === "wait") {
                 postStallRequest(it, "判断：" + stallShort(it),
-                  "対象：" + stallTarget(it) + "\n判断：" + text);
+                  "対象：" + stallTarget(it) + "\n判断：" + text, row);
               } else {
                 postStallRequest(it, "指示：" + stallShort(it),
-                  "対象：" + stallTarget(it) + "\n指示：" + text);
+                  "対象：" + stallTarget(it) + "\n指示：" + text, row);
               }
             } else if (act === "ok" || act === "ng") {
               if (act === "ng" && !confirm("この件を見送りますか？")) return;
@@ -557,17 +623,25 @@
                 "対象：" + stallTarget(it) +
                 (it.nextAction ? "\n次の動き：" + it.nextAction : "") +
                 (it.why && it.why !== it.nextAction ? "\n詰まりの理由：" + it.why : "") +
-                "\n判断：" + judge);
+                "\n判断：" + judge, row);
             } else if (act === "restart") {
               postStallRequest(it, "再開：" + stallShort(it),
                 "対象：" + stallTarget(it) + "\n詰まりの理由：" + it.why +
-                "\n詰まり帯の「再開させる」から登録された指示です。対象を再開してください。");
+                "\n詰まり帯の「再開させる」から登録された指示です。対象を再開してください。", row);
             } else if (act === "close") {
               if (!it.workId) return;
               if (!confirm("この作業を終わりにしますか？（中止として閉じます）")) return;
-              if (!ensureToken()) return;
-              writeRest("PATCH", "work_items?id=eq." + encodeURIComponent(it.workId), { status: "cancelled" })
-                .then(reload).catch(writeFailed);
+              ensureTokenAsync().then(function (ok) {
+                if (!ok) return;
+                setStallBusy(row, true);
+                writeRest("PATCH", "work_items?id=eq." + encodeURIComponent(it.workId), { status: "cancelled" })
+                  .then(function () {
+                    stallDone(row, "終わりにしました");
+                    showNotice("作業を終わりにしました：「" + it.act + "」");
+                    setTimeout(reload, 3000);
+                  })
+                  .catch(function (e) { stallFailed(row, e); });
+              });
             } else if (act === "detail") {
               activateTab("projects");
               try { history.replaceState(null, "", "#projects"); } catch (e) {}
@@ -823,8 +897,9 @@
         if (getToken()) {
           if (confirm("編集をオフにしますか？（この端末の編集キーを消します）")) { setToken(""); reload(); }
         } else {
-          var t = prompt("編集キーを入力してください（この端末にだけ保存されます）");
-          if (t) { setToken(t.trim()); reload(); }
+          openKeyModal().then(function (t) {
+            if (t) { setToken(t); reload(); }
+          });
         }
       });
 
@@ -1090,6 +1165,21 @@
     });
   });
   activateTab((location.hash || "#today").slice(1));
+
+  // 編集キー入力モーダル（#keymodal）のボタン結び付け（静的HTMLなので1回だけ）
+  (function () {
+    var okBtn = document.getElementById("keymodal-ok");
+    var cancelBtn = document.getElementById("keymodal-cancel");
+    var inp = document.getElementById("keymodal-input");
+    if (!okBtn || !cancelBtn || !inp) return;
+    var submit = function () { closeKeyModal(inp.value.trim() || null); };
+    okBtn.addEventListener("click", submit);
+    cancelBtn.addEventListener("click", function () { closeKeyModal(null); });
+    inp.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter") { ev.preventDefault(); submit(); }
+      else if (ev.key === "Escape") { closeKeyModal(null); }
+    });
+  })();
 
   // アプリ専用の呼び出し形式（data-scheme）が付いたリンクは、まずアプリ起動を試し、開かなければWebへ進む
   document.addEventListener("click", function (e) {
