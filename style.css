@@ -644,3 +644,11 @@ section.alertbox.tumi { border: none; border-left: 4px solid #ff4d4d; background
 .pjd-works { margin-top: 6px; }
 .pjd-w { font-size: 12.5px; color: var(--body); padding: 3px 0; border-top: 1px dashed rgba(255, 255, 255, 0.08); }
 .crow .ccont { color: #a9e8c0; border-color: rgba(29, 185, 84, 0.6); }
+
+/* 横スクロール防止（2026-11-23 23:44）：2列のアカウント欄が画面幅を超えないようにする */
+html, body { overflow-x: hidden; }
+#today-accounts { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+#today-accounts .crow { min-width: 0; }
+#today-accounts .cmedia { flex: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis; }
+#today-accounts a.cacct, #today-accounts span.cacct { flex: 1; min-width: 0; }
+.pjd-w { overflow-wrap: anywhere; }
