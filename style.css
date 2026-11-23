@@ -630,3 +630,7 @@ section.alertbox.tumi { border-color: #6b2626; border-left: 4px solid #ff4d4d; }
 #today-accounts { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; }
 #today-accounts .cgrp { grid-column: 1 / -1; }
 #today-accounts .crow { font-size: 11.5px; padding: 4px 2px; gap: 5px; }
+
+/* 枠そのものをやめ、左の帯だけにする（2026-11-23 22:52 わたるの指摘：赤枠が二重に見える） */
+section.alertbox.ban { border: none; border-left: 4px solid #ff7847; background: rgba(255, 120, 71, 0.10); }
+section.alertbox.tumi { border: none; border-left: 4px solid #ff4d4d; background: rgba(255, 77, 77, 0.08); }
