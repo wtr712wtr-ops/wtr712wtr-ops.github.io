@@ -8,7 +8,7 @@
     cfg.supabaseUrl.indexOf("YOUR_") >= 0 || cfg.anonKey.indexOf("YOUR_") >= 0;
 
   // ---------------- 画面の自動更新（新しい版が出ていたら自動で読み直す） ----------------
-  var APP_VERSION = "20261123-2005";
+  var APP_VERSION = "20261123-2010";
   function checkVersion() {
     fetch("./index.html?nv=" + Date.now(), { cache: "no-store" }).then(function (res) {
       return res.text();
@@ -493,8 +493,7 @@
     if (stallSec) {
       var nowMs = Date.now();
       var stallItems = [];
-      // 押した行の完了表示を保持する印（localStorage）。項目の状態（stamp）が変わるか、
-      // 一覧から消えたら印は外れる（次回描画でボタンが戻る）。
+      // 押した行の完了表示を保持する印（localStorage）。項目が一覧から消えたら印は外れる。
       var STALL_ACTED_KEY = "tower_stall_acted";
       var loadStallActed = function () {
         try {
@@ -508,7 +507,7 @@
       };
       var markStallActed = function (it, msg) {
         if (!it || !it.skey) return;
-        stallActed[it.skey] = { stamp: it.stamp, msg: msg };
+        stallActed[it.skey] = { msg: msg };
         saveStallActed();
       };
       (data.projects || []).forEach(function (p) {
@@ -558,12 +557,14 @@
         }
       });
       stallItems.sort(function (a, b) { return a.rank - b.rank; });
-      // 今の一覧に無い項目・状態（stamp）が変わった項目の印は外して保存し直す
+      // 今の一覧から消えた項目の印だけを外して保存し直す。
+      // 項目が一覧に残っている間は、更新時刻などが変わっても印は外さない
+      // （2026年11月23日夜の修正：updated_at を条件に含めると、記録の更新のたびに印が消えてボタンが戻っていた）。
       var actedChanged = false;
       Object.keys(stallActed).forEach(function (k) {
         var cur = null;
         stallItems.forEach(function (it) { if (it.skey === k) cur = it; });
-        if (!cur || !stallActed[k] || stallActed[k].stamp !== cur.stamp) {
+        if (!cur) {
           delete stallActed[k];
           actedChanged = true;
         }
@@ -573,7 +574,7 @@
         stallSec.hidden = false;
         document.getElementById("stalls").innerHTML = stallItems.map(function (it, idx) {
           var acted = stallActed[it.skey];
-          var isActed = !!(acted && acted.stamp === it.stamp);
+          var isActed = !!acted;
           var btns;
           if (isActed) {
             btns = '<span class="sdone">✓ ' +
