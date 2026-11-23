@@ -476,10 +476,9 @@ span.tcheck2 { cursor: default; }
 /* ===== 要対応＋全件圧縮型（2026-11-23、モックCの本番実装） ===== */
 /* 詰まり帯（今日タブ上部） */
 #stalls {
-  background: rgba(229, 72, 77, 0.08);
-  border: 1px solid rgba(229, 72, 77, 0.5);
-  border-radius: 14px;
-  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  padding: 0;
 }
 .stallitem { padding: 9px 0; border-top: 1px dashed rgba(255, 255, 255, 0.14); }
 .stallitem:first-child { border-top: none; }
