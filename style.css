@@ -611,3 +611,9 @@ section.alertbox .card {
 }
 section.alertbox .card:first-child { border-top: none; }
 .crow .cgenre { color: var(--sub); font-size: 11px; white-space: nowrap; }
+
+/* モックC合わせ（2026-11-23）：4ブロックの見出しを小さい字にし、行を詰める。0件ボックスの注記 */
+#today-projects-section h2, #today-accounts-section h2 { font-size: 13px; color: var(--sub); margin: 0 0 4px; }
+section.alertbox h2 { font-size: 13px; }
+.crow { font-size: 12.5px; padding: 5px 6px; }
+.empty-note { font-size: 12px; color: var(--sub); padding: 2px 0 8px; }

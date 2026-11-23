@@ -8,7 +8,7 @@
     cfg.supabaseUrl.indexOf("YOUR_") >= 0 || cfg.anonKey.indexOf("YOUR_") >= 0;
 
   // ---------------- 画面の自動更新（新しい版が出ていたら自動で読み直す） ----------------
-  var APP_VERSION = "20261123-2205";
+  var APP_VERSION = "20261123-2215";
   function checkVersion() {
     fetch("./index.html?nv=" + Date.now(), { cache: "no-store" }).then(function (res) {
       return res.text();
@@ -476,7 +476,11 @@
         });
       });
     } else {
-      apSec.hidden = true;
+      // 0件でもボックス自体は出す（モックCの並びを常に保つ。2026-11-23 わたるの指摘）
+      apSec.hidden = false;
+      var apCnt0 = document.getElementById("approvals-count");
+      if (apCnt0) apCnt0.textContent = "0件";
+      ap.innerHTML = '<p class="empty-note">今はありません</p>';
     }
     Array.prototype.forEach.call(document.querySelectorAll(".appr-badge"), function (apprBadge) {
       apprBadge.textContent = data.approvals.length;
@@ -715,7 +719,11 @@
           });
         });
       } else {
-        stallSec.hidden = true;
+        // 0件でもボックス自体は出す（モックCの並びを常に保つ。2026-11-23 わたるの指摘）
+        stallSec.hidden = false;
+        var stCnt0 = document.getElementById("stalls-count");
+        if (stCnt0) stCnt0.textContent = "0件";
+        document.getElementById("stalls").innerHTML = '<p class="empty-note">今はありません</p>';
       }
     }
 
