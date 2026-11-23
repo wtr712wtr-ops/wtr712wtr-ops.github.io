@@ -8,7 +8,7 @@
     cfg.supabaseUrl.indexOf("YOUR_") >= 0 || cfg.anonKey.indexOf("YOUR_") >= 0;
 
   // ---------------- 画面の自動更新（新しい版が出ていたら自動で読み直す） ----------------
-  var APP_VERSION = "20261123-2225";
+  var APP_VERSION = "20261123-2245";
   function checkVersion() {
     fetch("./index.html?nv=" + Date.now(), { cache: "no-store" }).then(function (res) {
       return res.text();
@@ -589,6 +589,7 @@
               esc(acted.msg === "終わりにしました" ? "終わりにしました" : "登録済み（Museが対応中）") + "</span>";
           } else if (it.kind === "wait") {
             btns = '<button class="sbtn pri" data-sact="ok" data-idx="' + idx + '">進めてよい</button>' +
+              '<button class="sbtn restart" data-sact="restart" data-idx="' + idx + '">再開させる</button>' +
               '<button class="sbtn dng" data-sact="ng" data-idx="' + idx + '">見送る</button>' +
               '<button class="sbtn" data-sact="write" data-idx="' + idx + '">判断を書く</button>';
           } else if (it.kind === "work") {
