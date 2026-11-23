@@ -8,7 +8,7 @@
     cfg.supabaseUrl.indexOf("YOUR_") >= 0 || cfg.anonKey.indexOf("YOUR_") >= 0;
 
   // ---------------- 画面の自動更新（新しい版が出ていたら自動で読み直す） ----------------
-  var APP_VERSION = "20261123-1715";
+  var APP_VERSION = "20261123-2005";
   function checkVersion() {
     fetch("./index.html?nv=" + Date.now(), { cache: "no-store" }).then(function (res) {
       return res.text();
@@ -736,7 +736,14 @@
       instagram_parallel: "https://www.instagram.com/paralleljapanworld/",
       tiktok: "https://www.tiktok.com/@paralleljapanworld",
       line_stamps: "https://creator.line.me/",
-      booth: "https://manage.booth.pm/"
+      booth: "https://manage.booth.pm/",
+      "exp-jitsuroku-instagram": "https://www.instagram.com/jitsuroku_lab/",
+      "exp-jitsuroku-threads": "https://www.threads.com/@jitsuroku_lab",
+      "exp-jitsuroku-x": "https://x.com/jitsuroku_lab",
+      "exp-jitsuroku-note": "https://note.com/jitsuroku_lab",
+      "exp-promptpilot-x": "https://x.com/promptpilot_jp",
+      "exp-promptpilot-instagram": "https://www.instagram.com/promptpilotai.jp/",
+      "exp-promptpilot-gumroad": "https://gumroad.com/dashboard"
     };
     document.getElementById("media").innerHTML = data.media_channels.map(function (m) {
       var works = data.work_items.filter(function (w) { return w.media_id === m.id; });
@@ -818,6 +825,8 @@
         var acctGroup = function (m) {
           if (m.slug === "line_stamps" || m.slug === "booth") return "販売（スタンプ・BOOTH）";
           if (m.slug.indexOf("youtube") === 0 || m.slug === "instagram_parallel" || m.slug === "tiktok") return "Parallel Japan（動画）";
+          if (m.slug.indexOf("exp-jitsuroku") === 0) return "実験（実録ラボ）";
+          if (m.slug.indexOf("exp-promptpilot") === 0) return "実験（PromptPilot AI）";
           return "THE GYM";
         };
         var acctState = function (m) {
