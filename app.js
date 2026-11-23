@@ -429,6 +429,11 @@
     // 詰まり帯（今日タブ上部）— 判定は既存の詰まり検知（ops_watch）と同じ定義で、取得済みデータから引く。
     // 案件単位：summary 先頭の【止まり検知】マーカー（ops_watch が付けたもの）。
     // 作業単位：blocked／期限超過／進行中のまま48時間以上更新なし、の3条件（1作業は1件だけ数える）。
+    // 第2弾（2026-11-23）：各行に操作ボタンを常時表示する（モックC2-A「行内ボタン型」）。
+    // 行の種類は3つ：わたる待ち／Muse側の停滞・作業単位／Muse側の停滞・案件単位。
+    // わたる待ちの判定：案件は owner_action があるか、次の一手（next_action）に承認・わたる待ちが含まれるもの。
+    // 作業は owner_action があるか承認待ち状態のもの。承認（approvals）との紐づけは今回はしない（比較メモの未対応1）。
+    // 書き込み先は既存の置き場だけ：判断・再開・指示は board_requests、終わりにするは work_items の status=cancelled。
     var stallSec = document.getElementById("stalls-section");
     if (stallSec) {
       var nowMs = Date.now();
@@ -439,29 +444,143 @@
         var dm = sm.match(/最終更新：(\d+)年(\d+)月(\d+)日/);
         var dateTxt = dm ? "（最終更新 " + Number(dm[2]) + "/" + Number(dm[3]) + "）" : "";
         var restSm = sm.replace(/^【止まり検知】動きが止まっています（最終更新：[^）]+）。/, "");
-        stallItems.push({ rank: 0, pj: p.name, act: "止まり検知" + dateTxt, why: restSm });
+        var waitP = !!p.owner_action || /承認|わたる待ち/.test(p.next_action || "");
+        stallItems.push({
+          rank: 0, kind: waitP ? "wait" : "project",
+          kindLabel: waitP ? "わたる待ち" : "案件の止まり",
+          pj: p.name, pjId: p.id, pjSlug: p.slug, workId: null,
+          act: "止まり検知" + dateTxt,
+          why: waitP && p.next_action ? p.next_action : restSm,
+          nextAction: p.next_action || ""
+        });
       });
       (data.work_items || []).forEach(function (w) {
         var where = (w.project && w.project.name) || (w.media && w.media.name) || "";
+        var waitW = !!w.owner_action || w.status === "waiting_approval";
+        var base = {
+          pj: where, pjId: w.project_id || null,
+          pjSlug: (w.project && w.project.slug) || null,
+          workId: w.id, act: w.title, nextAction: "",
+          kind: waitW ? "wait" : "work"
+        };
         if (w.status === "blocked") {
-          stallItems.push({ rank: 1, pj: where, act: w.title, why: w.blocked_reason || "止まっています" });
+          base.rank = 1;
+          base.kindLabel = waitW ? "わたる待ち" : "止まっている";
+          base.why = w.blocked_reason || "止まっています";
+          stallItems.push(base);
         } else if (w.due_at && new Date(w.due_at).getTime() < nowMs) {
-          stallItems.push({ rank: 2, pj: where, act: w.title, why: "期限 " + fmtTime(w.due_at) + " を過ぎています" });
+          base.rank = 2;
+          base.kindLabel = waitW ? "わたる待ち" : "期限超過";
+          base.why = "期限 " + fmtTime(w.due_at) + " を過ぎています";
+          stallItems.push(base);
         } else if (w.status === "in_progress" && w.updated_at &&
                    new Date(w.updated_at).getTime() < nowMs - 48 * 3600 * 1000) {
-          stallItems.push({ rank: 3, pj: where, act: w.title, why: "進行中のまま48時間以上更新がありません（最終更新 " + fmtTime(w.updated_at) + "）" });
+          base.rank = 3;
+          base.kindLabel = waitW ? "わたる待ち" : "更新なし";
+          base.why = "進行中のまま48時間以上更新がありません（最終更新 " + fmtTime(w.updated_at) + "）";
+          stallItems.push(base);
         }
       });
       stallItems.sort(function (a, b) { return a.rank - b.rank; });
       if (stallItems.length) {
         stallSec.hidden = false;
-        document.getElementById("stalls").innerHTML = stallItems.map(function (it) {
+        document.getElementById("stalls").innerHTML = stallItems.map(function (it, idx) {
+          var btns;
+          if (it.kind === "wait") {
+            btns = '<button class="sbtn pri" data-sact="ok" data-idx="' + idx + '">進めてよい</button>' +
+              '<button class="sbtn dng" data-sact="ng" data-idx="' + idx + '">見送る</button>' +
+              '<button class="sbtn" data-sact="write" data-idx="' + idx + '">判断を書く</button>';
+          } else if (it.kind === "work") {
+            btns = '<button class="sbtn restart" data-sact="restart" data-idx="' + idx + '">再開させる</button>' +
+              '<button class="sbtn" data-sact="write" data-idx="' + idx + '">指示を書く</button>' +
+              '<button class="sbtn dng" data-sact="close" data-idx="' + idx + '">終わりにする</button>';
+          } else {
+            btns = '<button class="sbtn restart" data-sact="restart" data-idx="' + idx + '">再開させる</button>' +
+              '<button class="sbtn" data-sact="write" data-idx="' + idx + '">指示を書く</button>';
+          }
+          btns += '<button class="sbtn detail" data-sact="detail" data-idx="' + idx + '">詳細 ›</button>';
+          var ph = it.kind === "wait" ? "判断を短く書く（例：その内容で進めてよい）" : "Museへの指示を短く書く";
           return '<div class="stallitem">' +
+            '<span class="kind' + (it.kind === "wait" ? " wait" : "") + '">' + esc(it.kindLabel) + "</span>" +
             (it.pj ? '<span class="pj">' + esc(it.pj) + "：</span>" : "") +
             '<span class="act">' + esc(it.act) + "</span>" +
             (it.why ? '<div class="why">' + esc(it.why) + "</div>" : "") +
+            '<div class="sbtns">' + btns + "</div>" +
+            '<div class="sinp"><input type="text" data-sinp="' + idx + '" placeholder="' + ph + '" autocomplete="off">' +
+            '<button class="sbtn pri" data-sact="send" data-idx="' + idx + '">送る</button></div>' +
             "</div>";
         }).join("");
+        // 詰まり行のボタンの処理。ボタンは常時表示し、編集キーが無ければ押した時点で入力を求める（ensureToken）。
+        var stallTarget = function (it) {
+          if (it.workId) return "作業「" + it.act + "」" + (it.pj ? "（案件：" + it.pj + "）" : "");
+          return "案件「" + it.pj + "」";
+        };
+        var stallShort = function (it) { return it.workId ? it.act : it.pj; };
+        var stallLabel = function (it) { return it.workId ? it.act : it.pj + "の件"; };
+        var postStallRequest = function (it, title, detail) {
+          if (!ensureToken()) return;
+          writeRest("POST", "board_requests", {
+            title: title, detail: detail, requester: "wataru",
+            assignee_ai: "muse", project_id: it.pjId || null,
+            status: "requested", deliverable_url: ""
+          }).then(reload).catch(writeFailed);
+        };
+        Array.prototype.forEach.call(document.querySelectorAll("#stalls [data-sact]"), function (btn) {
+          btn.addEventListener("click", function () {
+            var it = stallItems[Number(btn.getAttribute("data-idx"))];
+            if (!it) return;
+            var act = btn.getAttribute("data-sact");
+            if (act === "write") {
+              var row = btn.closest(".stallitem");
+              var inp = row ? row.querySelector(".sinp") : null;
+              if (inp) {
+                inp.classList.toggle("open");
+                var f = inp.querySelector("input");
+                if (inp.classList.contains("open") && f) f.focus();
+              }
+            } else if (act === "send") {
+              var row2 = btn.closest(".stallitem");
+              var f2 = row2 ? row2.querySelector("input[data-sinp]") : null;
+              var text = f2 ? f2.value.trim() : "";
+              if (!text) { if (f2) f2.focus(); return; }
+              if (it.kind === "wait") {
+                postStallRequest(it, "判断：" + stallShort(it),
+                  "対象：" + stallTarget(it) + "\n判断：" + text);
+              } else {
+                postStallRequest(it, "指示：" + stallShort(it),
+                  "対象：" + stallTarget(it) + "\n指示：" + text);
+              }
+            } else if (act === "ok" || act === "ng") {
+              if (act === "ng" && !confirm("この件を見送りますか？")) return;
+              var judge = act === "ok" ? "進めてよい" : "見送る";
+              postStallRequest(it, "判断：" + stallLabel(it) + "を" + judge,
+                "対象：" + stallTarget(it) +
+                (it.nextAction ? "\n次の動き：" + it.nextAction : "") +
+                (it.why && it.why !== it.nextAction ? "\n詰まりの理由：" + it.why : "") +
+                "\n判断：" + judge);
+            } else if (act === "restart") {
+              postStallRequest(it, "再開：" + stallShort(it),
+                "対象：" + stallTarget(it) + "\n詰まりの理由：" + it.why +
+                "\n詰まり帯の「再開させる」から登録された指示です。対象を再開してください。");
+            } else if (act === "close") {
+              if (!it.workId) return;
+              if (!confirm("この作業を終わりにしますか？（中止として閉じます）")) return;
+              if (!ensureToken()) return;
+              writeRest("PATCH", "work_items?id=eq." + encodeURIComponent(it.workId), { status: "cancelled" })
+                .then(reload).catch(writeFailed);
+            } else if (act === "detail") {
+              activateTab("projects");
+              try { history.replaceState(null, "", "#projects"); } catch (e) {}
+              var tid = it.pjSlug ? "pjcard-" + it.pjSlug : (it.workId ? "wkcard-" + it.workId : null);
+              if (tid) {
+                setTimeout(function () {
+                  var el = document.getElementById(tid);
+                  if (el) el.scrollIntoView({ block: "center" });
+                }, 60);
+              }
+            }
+          });
+        });
       } else {
         stallSec.hidden = true;
       }
@@ -509,7 +628,7 @@
 
     // 案件
     document.getElementById("projects").innerHTML = data.projects.map(function (p) {
-      return '<article class="card pcard ' + esc(p.status_color) + '"><div class="name"><span class="dot ' + esc(p.status_color) + '"></span>' +
+      return '<article class="card pcard ' + esc(p.status_color) + '" id="pjcard-' + esc(p.slug) + '"><div class="name"><span class="dot ' + esc(p.status_color) + '"></span>' +
         esc(p.name) + "</div>" +
         '<div class="sub">' + esc(p.status_label) + "</div>" +
         (p.summary ? '<p class="line clampable">' + esc(p.summary) + "</p>" : "") +
@@ -677,7 +796,7 @@
           ? '<button class="btn undo-btn" data-undo="' + esc(w.id) + '">完了を取り消す</button>'
           : '<button class="btn done-btn" data-done="' + esc(w.id) + '">完了にする</button>';
       }
-      return '<article class="card"><div class="name">' + esc(w.title) + "</div>" +
+      return '<article class="card" id="wkcard-' + esc(w.id) + '"><div class="name">' + esc(w.title) + "</div>" +
         '<div class="sub">' + esc(where) + (when ? "｜" + esc(when) : "") + "</div>" +
         '<p class="line"><span class="status ' + esc(w.status) + '">' +
         esc(STATUS_LABEL[w.status] || w.status) + "</span></p>" +

@@ -517,3 +517,44 @@ span.tcheck2 { cursor: default; }
 .crow a.cacct { color: #8fd0ff; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .crow span.cacct { color: var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cgrp { font-size: 12px; color: var(--yellow); font-weight: 700; padding: 12px 4px 2px; }
+
+/* ===== 詰まり行の操作ボタン（2026-11-23、モックC2-A「行内ボタン型」の本番実装） ===== */
+.stallitem .kind {
+  float: right;
+  font-size: 11px; font-weight: 600;
+  color: #ffb3b3;
+  border: 1px solid rgba(255, 179, 179, 0.45);
+  border-radius: 999px;
+  padding: 1px 7px;
+  margin-left: 6px;
+  line-height: 1.6;
+}
+.stallitem .kind.wait { color: #ffcf9e; border-color: rgba(255, 207, 158, 0.5); }
+.sbtns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.sbtn {
+  font: inherit;
+  font-size: 13px; font-weight: 600; line-height: 1;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #262626;
+  color: var(--text);
+  cursor: pointer;
+}
+.sbtn:active { opacity: 0.6; }
+.sbtn.pri { background: #B6D7BE; border-color: transparent; color: #0F1A12; }
+.sbtn.restart { background: rgba(59, 130, 246, 0.28); border-color: rgba(59, 130, 246, 0.45); color: #cfe4ff; }
+.sbtn.dng { background: transparent; border-color: rgba(255, 110, 110, 0.55); color: #ff9c9c; }
+.sbtn.detail { margin-left: auto; background: transparent; border-color: transparent; color: #8fd0ff; padding: 9px 4px; }
+.sinp { display: none; gap: 6px; margin-top: 8px; }
+.sinp.open { display: flex; }
+.sinp input {
+  flex: 1; min-width: 0;
+  font: inherit; font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #1D1D1D;
+  color: var(--text);
+}
+.sinp .sbtn { flex: none; }
