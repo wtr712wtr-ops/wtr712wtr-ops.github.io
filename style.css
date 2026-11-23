@@ -595,3 +595,19 @@ span.tcheck2 { cursor: default; }
 }
 .km-btns { display: flex; gap: 8px; margin-top: 14px; }
 .km-btns .btn { flex: 1; margin-top: 0; margin-left: 0; }
+
+/* モックC（要対応＋全件圧縮型）の見た目：わたるの番・詰まりは色枠ボックス、見出しに件数 */
+section.alertbox { border-radius: 10px; padding: 12px 14px 6px; }
+section.alertbox.ban { background: rgba(255, 120, 71, 0.13); border: 1px solid #ff7847; }
+section.alertbox.tumi { background: rgba(255, 77, 77, 0.10); border: 1px solid #ff4d4d; }
+section.alertbox h2 { font-size: 15px; margin: 0 0 6px; }
+section.alertbox.ban h2 { color: #ffab8a; }
+section.alertbox.tumi h2 { color: #ff9c9c; }
+h2 .cnt { font-size: 12px; font-weight: 400; opacity: 0.8; margin-left: 4px; }
+section.alertbox .stack { gap: 0; }
+section.alertbox .card {
+  background: transparent; border: none; border-radius: 0; box-shadow: none;
+  padding: 9px 0; border-top: 1px dashed rgba(255, 255, 255, 0.14);
+}
+section.alertbox .card:first-child { border-top: none; }
+.crow .cgenre { color: var(--sub); font-size: 11px; white-space: nowrap; }

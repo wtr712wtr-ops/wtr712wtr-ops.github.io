@@ -438,6 +438,8 @@
     var ownerProjects = (data.projects || []).filter(function (p) { return p.owner_action; });
     if (data.approvals.length || ownerProjects.length) {
       apSec.hidden = false;
+      var apCnt = document.getElementById("approvals-count");
+      if (apCnt) apCnt.textContent = (data.approvals.length + ownerProjects.length) + "件";
       ap.innerHTML = data.approvals.map(function (a) {
         return '<article class="card approval"><div class="name">' + esc(a.title) + "</div>" +
           (a.recommendation ? '<p class="rec clampable">推奨：' + esc(a.recommendation) + "</p>" : "") +
@@ -572,6 +574,8 @@
       if (actedChanged) saveStallActed();
       if (stallItems.length) {
         stallSec.hidden = false;
+        var stCnt = document.getElementById("stalls-count");
+        if (stCnt) stCnt.textContent = stallItems.length + "件";
         document.getElementById("stalls").innerHTML = stallItems.map(function (it, idx) {
           var acted = stallActed[it.skey];
           var isActed = !!acted;
@@ -781,6 +785,8 @@
     if (tdProjSec) {
       if (data.projects.length) {
         tdProjSec.hidden = false;
+        var pjCnt = document.getElementById("today-projects-count");
+        if (pjCnt) pjCnt.textContent = data.projects.length + "件・1行ずつ";
         var pjState = function (p) {
           var works = (data.work_items || []).filter(function (w) { return w.project_id === p.id; });
           var ban = !!p.owner_action || (data.approvals || []).some(function (a) { return a.project_id === p.id; });
@@ -823,6 +829,24 @@
     if (tdAcctSec) {
       if (data.media_channels.length) {
         tdAcctSec.hidden = false;
+        var acCnt = document.getElementById("today-accounts-count");
+        if (acCnt) acCnt.textContent = data.media_channels.length + "件・1行ずつ";
+        var MEDIA_GENRE = {
+          instagram: "店舗・集客", threads: "店舗・交流", facebook: "店舗ページ",
+          x: "知識系・note導線", blog: "SEO・AIO", gbp: "店舗情報", note: "実録・有料記事",
+          youtube: "POVキャラ型", "youtube-atlas-oddities": "地理", "youtube-parallel-timelines": "歴史What-if",
+          "youtube-cosmic-what-if": "宇宙What-if", "youtube-scale-shock": "サイズ比較",
+          "youtube-myths-retold": "神話", "youtube-after-dark-tales": "ホラー・怪奇",
+          "youtube-food-origins": "食の起源", "youtube-ancient-enigmas": "古代の謎",
+          "youtube-natures-fury": "自然災害", instagram_parallel: "Shorts横流し", tiktok: "POV歴史",
+          line_stamps: "受注制作", booth: "受注制作"
+        };
+        var acctGenre = function (m) {
+          if (MEDIA_GENRE[m.slug]) return MEDIA_GENRE[m.slug];
+          if (m.slug.indexOf("exp-jitsuroku") === 0) return "実録・実験";
+          if (m.slug.indexOf("exp-promptpilot") === 0) return "英語AI・実験";
+          return "";
+        };
         var acctGroup = function (m) {
           if (m.slug === "line_stamps" || m.slug === "booth") return "販売（スタンプ・BOOTH）";
           if (m.slug.indexOf("youtube") === 0 || m.slug === "instagram_parallel" || m.slug === "tiktok") return "Parallel Japan（動画）";
@@ -854,6 +878,7 @@
               ? '<a class="cacct" href="' + url + '" target="_blank" rel="noopener">' + esc(m.account_label) + "</a>"
               : '<span class="cacct">' + esc(m.account_label) + "</span>";
             return '<div class="crow"><span class="cmedia">' + esc(m.name) + "</span>" +
+              (acctGenre(m) ? '<span class="cgenre">' + esc(acctGenre(m)) + "</span>" : "") +
               acct +
               '<span class="cst ' + st.key + '">' + st.label + "</span></div>";
           }).join("");
