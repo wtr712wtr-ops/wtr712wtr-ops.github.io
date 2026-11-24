@@ -8,7 +8,7 @@
     cfg.supabaseUrl.indexOf("YOUR_") >= 0 || cfg.anonKey.indexOf("YOUR_") >= 0;
 
   // ---------------- 画面の自動更新（新しい版が出ていたら自動で読み直す） ----------------
-  var APP_VERSION = "20261123-2350";
+  var APP_VERSION = "20261124-1107";
   function checkVersion() {
     fetch("./index.html?nv=" + Date.now(), { cache: "no-store" }).then(function (res) {
       return res.text();
@@ -227,7 +227,7 @@
       rest("approvals?select=*,project:projects(name,slug)&status=eq.pending&order=created_at.desc"),
       rest("reports?select=*&order=created_at.desc&limit=20"),
       rest("work_items?" + doneSelect),
-      rest("board_requests?select=*,project:projects(name,slug)&order=created_at.desc&limit=20"),
+      rest("board_requests?select=*,project:projects(name,slug)&order=created_at.desc&limit=50"),
       rest("measures?select=*,project:projects(name,slug),media:media_channels(name,slug)&order=created_at.desc&limit=20"),
       rest("measure_results?select=*&order=measured_at.desc&limit=300"),
       todayFetch
@@ -292,6 +292,15 @@
     document.getElementById("meta").innerHTML =
       (useMock ? '<span class="badge">モック表示</span> ' : "") +
       esc(new Date().toLocaleString("ja-JP")) + " 時点";
+
+    // 「続ける」ボタンの表示は、未処理（requested）の依頼がある時だけ「送りました」にする（2026-11-24修正）
+    var pendingContPj = {};
+    var pendingContWk = {};
+    (data.board_requests || []).forEach(function (r) {
+      if (r.status !== "requested" || !r.title || r.title.indexOf("続ける：") !== 0) return;
+      if (r.project_id) pendingContPj[r.project_id] = true;
+      pendingContWk[(r.project_id || "") + "|" + r.title.slice(4)] = true;
+    });
 
     // 今日のタスク（司令塔の先頭）
     var tdEl = document.getElementById("today-date");
@@ -837,7 +846,9 @@
             '<span class="cname">' + esc(p.name) + "</span>" +
             '<span class="cone">' + esc(one) + "</span>" +
             '<span class="cst ' + st.key + '">' + st.label + "</span>" +
-            '<button class="cdetail ccont" data-pjcont="' + esc(p.id) + '" data-pjname="' + esc(p.name) + '">続ける</button>' +
+            (pendingContPj[p.id]
+              ? '<button class="cdetail ccont" data-pjcont="' + esc(p.id) + '" data-pjname="' + esc(p.name) + '" disabled>送りました</button>'
+              : '<button class="cdetail ccont" data-pjcont="' + esc(p.id) + '" data-pjname="' + esc(p.name) + '">続ける</button>') +
             '<button class="cdetail" data-pjdetail="' + esc(p.slug) + '">詳細</button></div>' + detail;
         }).join("");
         // 詳細ボタン：この画面のまま行の下へ広げて出す（2026-11-23 わたるの指示）
@@ -1034,7 +1045,9 @@
           : '<button class="btn done-btn" data-done="' + esc(w.id) + '">完了にする</button>';
       }
       if (!useMock && !isDone) {
-        btn += '<button class="btn cont-btn" data-cont="' + esc(w.id) + '" data-wtitle="' + esc(w.title) + '" data-pid="' + esc(w.project_id || "") + '">続ける</button>';
+        btn += pendingContWk[(w.project_id || "") + "|" + w.title]
+          ? '<button class="btn cont-btn" data-cont="' + esc(w.id) + '" data-wtitle="' + esc(w.title) + '" data-pid="' + esc(w.project_id || "") + '" disabled>送りました</button>'
+          : '<button class="btn cont-btn" data-cont="' + esc(w.id) + '" data-wtitle="' + esc(w.title) + '" data-pid="' + esc(w.project_id || "") + '">続ける</button>';
       }
       return '<article class="card" id="wkcard-' + esc(w.id) + '"><div class="name">' + esc(w.title) + "</div>" +
         '<div class="sub">' + esc(where) + (when ? "｜" + esc(when) : "") + "</div>" +
