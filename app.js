@@ -8,7 +8,7 @@
     cfg.supabaseUrl.indexOf("YOUR_") >= 0 || cfg.anonKey.indexOf("YOUR_") >= 0;
 
   // ---------------- 画面の自動更新（新しい版が出ていたら自動で読み直す） ----------------
-  var APP_VERSION = "20261124-1107";
+  var APP_VERSION = "20261124-1140";
   function checkVersion() {
     fetch("./index.html?nv=" + Date.now(), { cache: "no-store" }).then(function (res) {
       return res.text();
@@ -225,7 +225,7 @@
       rest("media_channels?select=*&order=sort_order.asc"),
       rest("work_items?" + workSelect),
       rest("approvals?select=*,project:projects(name,slug)&status=eq.pending&order=created_at.desc"),
-      rest("reports?select=*&order=created_at.desc&limit=20"),
+      rest("reports?select=*&order=created_at.desc&limit=40"),
       rest("work_items?" + doneSelect),
       rest("board_requests?select=*,project:projects(name,slug)&order=created_at.desc&limit=50"),
       rest("measures?select=*,project:projects(name,slug),media:media_channels(name,slug)&order=created_at.desc&limit=20"),
@@ -784,11 +784,33 @@
         : '<article class="card">' + inner + "</article>";
     }).join("") || '<p class="empty">媒体の登録なし</p>';
 
+    // 案件の状態は実績から引く：今日（日本時間）更新された進行中の作業か、今日の報告がある案件だけを「進行中」とする。
+    // 保存済みの status_color / status_label は古くなるため表示には使わない。
+    var pjStateOf = function (p) {
+      var works = (data.work_items || []).filter(function (w) { return w.project_id === p.id; });
+      var ban = !!p.owner_action || (data.approvals || []).some(function (a) { return a.project_id === p.id; });
+      var tumi = (p.summary || "").indexOf("【止まり検知】") === 0 ||
+        works.some(function (w) { return w.status === "blocked"; });
+      var nowJ = new Date(Date.now() + 9 * 3600 * 1000);
+      var dayStart = Date.UTC(nowJ.getUTCFullYear(), nowJ.getUTCMonth(), nowJ.getUTCDate()) - 9 * 3600 * 1000;
+      var fresh = function (ts) { return !!ts && new Date(ts).getTime() >= dayStart; };
+      var active = works.some(function (w) { return w.status === "in_progress" && fresh(w.updated_at); }) ||
+        (data.reports || []).some(function (r) { return r.project_id === p.id && fresh(r.created_at); });
+      // 「続ける」が押されて、まだ処理されていない間は進行中と出す（押したことが画面で分かるように。2026-11-24、わたるの指摘）
+      var contNow = (data.board_requests || []).some(function (r) { return r.project_id === p.id && r.status === "requested" && (r.title || "").indexOf("続ける：") === 0 && fresh(r.created_at); });
+      if (ban) return { rank: 0, key: "ban", label: "自分の番", color: "red" };
+      if (contNow) return { rank: 2, key: "shin", label: "進行中", color: "yellow" };
+      if (tumi) return { rank: 1, key: "tumi", label: "詰まり", color: "red" };
+      if (active) return { rank: 2, key: "shin", label: "進行中", color: "yellow" };
+      return { rank: 3, key: "machi", label: "待ち", color: "gray" };
+    };
+
     // 案件
     document.getElementById("projects").innerHTML = data.projects.map(function (p) {
-      return '<article class="card pcard ' + esc(p.status_color) + '" id="pjcard-' + esc(p.slug) + '"><div class="name"><span class="dot ' + esc(p.status_color) + '"></span>' +
+      var pst = pjStateOf(p);
+      return '<article class="card pcard ' + pst.color + '" id="pjcard-' + esc(p.slug) + '"><div class="name"><span class="dot ' + pst.key + '"></span>' +
         esc(p.name) + "</div>" +
-        '<div class="sub">' + esc(p.status_label) + "</div>" +
+        '<div class="sub">' + pst.label + "</div>" +
         (p.summary ? '<p class="line clampable">' + esc(p.summary) + "</p>" : "") +
         (p.next_action ? '<p class="line">次：' + esc(p.next_action) + "</p>" : "") +
         (p.owner_action ? '<p class="line warn">あなたの番：' + esc(p.owner_action) + "</p>" : "") +
@@ -798,26 +820,14 @@
     }).join("") || '<p class="empty">案件の登録なし</p>';
 
     // 今日タブ用：全案件を1行ずつ圧縮して出す（自分の番・詰まりを上に寄せる。詳細は案件タブ）
-    // 状態の判定は既存の項目だけから引く：自分の番＝owner_action があるか承認待ちが紐づくもの、
-    // 詰まり＝止まり検知マーカーがあるか blocked の作業があるもの、進行中＝進行中の作業があるか状態色が緑・黄・青のもの。
+    // 状態の判定は pjStateOf（案件タブと共通）：自分の番／詰まり／進行中（今日、動いた実績があるものだけ）／待ち。
     var tdProjSec = document.getElementById("today-projects-section");
     if (tdProjSec) {
       if (data.projects.length) {
         tdProjSec.hidden = false;
         var pjCnt = document.getElementById("today-projects-count");
         if (pjCnt) pjCnt.textContent = data.projects.length + "件・1行ずつ";
-        var pjState = function (p) {
-          var works = (data.work_items || []).filter(function (w) { return w.project_id === p.id; });
-          var ban = !!p.owner_action || (data.approvals || []).some(function (a) { return a.project_id === p.id; });
-          var tumi = (p.summary || "").indexOf("【止まり検知】") === 0 ||
-            works.some(function (w) { return w.status === "blocked"; });
-          var active = works.some(function (w) { return w.status === "in_progress"; }) ||
-            p.status_color === "green" || p.status_color === "yellow" || p.status_color === "blue";
-          if (ban) return { rank: 0, key: "ban", label: "自分の番" };
-          if (tumi) return { rank: 1, key: "tumi", label: "詰まり" };
-          if (active) return { rank: 2, key: "shin", label: "進行中" };
-          return { rank: 3, key: "machi", label: "待ち" };
-        };
+        var pjState = pjStateOf;
         var sortedProjects = data.projects.slice().sort(function (a, b) {
           var d = pjState(a).rank - pjState(b).rank;
           return d !== 0 ? d : (a.sort_order || 0) - (b.sort_order || 0);
